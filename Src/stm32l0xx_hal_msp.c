@@ -38,6 +38,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx_hal.h"
+#include "timeServer.h"
 
 extern void _Error_Handler(char *, int);
 /* USER CODE BEGIN 0 */
@@ -46,44 +47,60 @@ extern void _Error_Handler(char *, int);
 /**
   * Initializes the Global MSP.
   */
-void HAL_MspInit(void)
+//void HAL_MspInit(void)
+//{
+//  /* USER CODE BEGIN MspInit 0 */
+//
+//  /* USER CODE END MspInit 0 */
+//
+//  __HAL_RCC_SYSCFG_CLK_ENABLE();
+//  __HAL_RCC_PWR_CLK_ENABLE();
+//
+//  /* System interrupt init*/
+//  /* SVC_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
+//  /* PendSV_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
+//  /* SysTick_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+//
+//  /* USER CODE BEGIN MspInit 1 */
+//
+//  /* USER CODE END MspInit 1 */
+//}
+
+void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc)
 {
-  /* USER CODE BEGIN MspInit 0 */
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_PeriphCLKInitTypeDef  PeriphClkInitStruct;
 
-  /* USER CODE END MspInit 0 */
-
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_PWR_CLK_ENABLE();
-
-  /* System interrupt init*/
-  /* SVC_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
-  /* PendSV_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-
-  /* USER CODE BEGIN MspInit 1 */
-
-  /* USER CODE END MspInit 1 */
-}
-
-void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
-{
-
-  if(hrtc->Instance==RTC)
+  /*##-1- Configue the RTC clock soucre ######################################*/
+  /* -a- Enable LSE Oscillator */
+  RCC_OscInitStruct.OscillatorType =  RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-  /* USER CODE BEGIN RTC_MspInit 0 */
-
-  /* USER CODE END RTC_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_RTC_ENABLE();
-  /* USER CODE BEGIN RTC_MspInit 1 */
-
-  /* USER CODE END RTC_MspInit 1 */
+    Error_Handler();
   }
 
+  /* -b- Select LSI as RTC clock source */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+  if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /*##-2- Enable the RTC peripheral Clock ####################################*/
+  /* Enable RTC Clock */
+  __HAL_RCC_RTC_ENABLE();
+
+  /*##-3- Configure the NVIC for RTC Alarm ###################################*/
+  HAL_NVIC_SetPriority(RTC_IRQn, 0x0, 0);
+  HAL_NVIC_EnableIRQ(RTC_IRQn);
 }
+
 
 void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
 {
@@ -102,6 +119,15 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
 
 }
 
+/**
+  * @brief  Alarm A callback.
+  * @param  hrtc: RTC handle
+  * @retval None
+  */
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
+{
+  TimerIrqHandler( );
+}
 //void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 //{
 //

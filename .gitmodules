@@ -1,0 +1,3 @@
+[submodule "Semtech_Utilities"]
+	path = Semtech_Utilities
+	url = http://christo@gitlab.kses.net/LoRa/Firmware/Semtech_Utilities.git

@@ -49,33 +49,27 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_pwr_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_i2c_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_dma.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_pwr.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rcc_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rcc.c \
-Src/commands.c \
-Src/main.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.c \
-Src/system_stm32l0xx.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ramfunc.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_gpio.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_i2c.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim.c \
-Src/stm32l0xx_it.c \
-Src/stm32l0xx_hal_msp.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim_ex.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart.c \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart_ex.c \
-KSES_Utilities/vcom.c \
-KSES_Utilities/rtc.c \
-KSES_Utilities/terminal.c 
+$(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c) \
+$(wildcard Semtech_Utilities/*.c) \
+$(wildcard KSES_Utilities/*.c) \
+$(wildcard Src/*.c)
+#Src/commands.c \
+#Src/main.c \
+#Src/system_stm32l0xx.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc_ex.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ramfunc.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_gpio.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_i2c.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim.c \
+#Src/stm32l0xx_it.c \
+#Src/stm32l0xx_hal_msp.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim_ex.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart.c \
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart_ex.c \
+#KSES_Utilities/vcom.c \
+#KSES_Utilities/rtc.c \
+#KSES_Utilities/terminal.c 
 
 # ASM sources
 ASM_SOURCES =  \
@@ -136,7 +130,8 @@ C_INCLUDES =  \
 -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32L0xx/Include \
 -IDrivers/CMSIS/Include \
--IKSES_Utilities
+-IKSES_Utilities \
+-ISemtech_Utilities
 
 
 # compile gcc flags
@@ -150,7 +145,8 @@ endif
 
 
 # Generate dependency information
-CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
+CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
+# -MT"$(@:%.o=%.d)"
 
 
 #######################################
@@ -165,7 +161,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET).bin
 
 
 #######################################
@@ -178,21 +174,26 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
-	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+$(BUILD_DIR)/%.o: %.c
+	@echo 'CC  $@' 
+	@$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	$(AS) -c $(CFLAGS) $< -o $@
+$(BUILD_DIR)/%.o: %.s
+	@echo 'ASM $@'
+	@$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	$(SZ) $@
+	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo 'ELF $@'
+	@$(SZ) $@
 
-$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf
 	$(HEX) $< $@
 	
-$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
+	@echo 'BIN $@'
+	@$(BIN) $< $@
+		
 	
 $(BUILD_DIR):
 	mkdir $@		

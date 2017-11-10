@@ -35,6 +35,7 @@
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
 #include "terminal.h"
+#include "hw_rtc.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -82,6 +83,11 @@ void USART2_IRQHandler(void)
 
         terminal_handleByte(c);
     }
+}
+
+void RTC_IRQHandler(void)
+{
+	HW_RTC_IrqHandler();
 }
 
 /******************************************************************************/
