@@ -30,13 +30,12 @@ OPT = -Og
 #######################################
 # source path
 SOURCES_DIR =  \
-Drivers/STM32L0xx_HAL_Driver \
 Application \
 Application/User \
 Application/MAKEFILE \
+Drivers/STM32L0xx_HAL_Driver \
 Drivers/CMSIS \
-Drivers \
-KSES_Utilities
+Drivers
 
 # firmware library path
 PERIFLIB_PATH = 
@@ -49,27 +48,19 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+$(wildcard Drivers/CMSIS/Device/ST/STM32L0xx/*.c) \
 $(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c) \
-$(wildcard Semtech_Utilities/*.c) \
-$(wildcard KSES_Utilities/*.c) \
-$(wildcard Src/*.c)
-#Src/commands.c \
-#Src/main.c \
-#Src/system_stm32l0xx.c \
+$(wildcard Src/*.c) \
+#$(wildcard KSES_Utilities/*.c) \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc_ex.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ramfunc.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_gpio.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_i2c.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_rtc.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim.c \
-#Src/stm32l0xx_it.c \
-#Src/stm32l0xx_hal_msp.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_tim_ex.c \
 #Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart.c \
-#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart_ex.c \
-#KSES_Utilities/vcom.c \
-#KSES_Utilities/rtc.c \
-#KSES_Utilities/terminal.c 
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_uart_ex.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -129,9 +120,7 @@ C_INCLUDES =  \
 -IDrivers/STM32L0xx_HAL_Driver/Inc \
 -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32L0xx/Include \
--IDrivers/CMSIS/Include \
--IKSES_Utilities \
--ISemtech_Utilities
+-IDrivers/CMSIS/Include
 
 
 # compile gcc flags

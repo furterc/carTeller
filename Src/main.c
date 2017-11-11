@@ -39,8 +39,8 @@
 #include "main.h"
 #include "stm32l0xx_hal.h"
 #include "terminal.h"
-#include "hw_rtc.h"
-#include "timeServer.h"
+#include "rtc.h"
+#include <stdlib.h>
 
 /* Private variables ---------------------------------------------------------*/
 
@@ -48,27 +48,6 @@
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 //static void MX_USART2_UART_Init(void);
-
-static TimerEvent_t timer;
-
-static void onTimerEvent(void)
-{
-	static uint8_t flashCnt = 0;
-	if(flashCnt == 4)
-	{
-		TimerSetValue(&timer, 800);
-		flashCnt = 0;
-	} else
-	{
-		if (flashCnt%2)
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
-		else
-			HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
-		TimerSetValue(&timer, 150);
-		flashCnt++;
-	}
-	TimerStart(&timer);
-}
 
 
 /* USER CODE BEGIN PFP */
@@ -87,32 +66,19 @@ int main(void)
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
 
-	/* Initialize the RTC */
-	HW_RTC_Init();
-
 	/* Initialize the terminal */
 	terminal_init();
 
+	/* Initialize the RTC */
+	rtc_init();
+
 	/* Infinite loop */
-	/* USER CODE BEGIN WHILE */
 	printf("hi!\n");
-
-	TimerInit(&timer, onTimerEvent);
-	TimerSetValue(&timer, 200);
-	TimerStart(&timer);
-	printf("i try start\n");
-
 
 	while (1)
 	{
 		terminal_run();
-		/* USER CODE END WHILE */
-
-		/* USER CODE BEGIN 3 */
-
 	}
-	/* USER CODE END 3 */
-
 }
 
 /** System Clock Configuration
@@ -177,6 +143,51 @@ void SystemClock_Config(void)
 	HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+
+static void MX_TIM2_Init()
+{
+//	TIM_ClockConfigTypeDef sClockSourceConfig;
+//	  TIM_MasterConfigTypeDef sMasterConfig;
+//	  TIM_IC_InitTypeDef sConfigIC;
+//
+//	  htim2.Instance = TIM2;
+//	  htim2.Init.Prescaler = 0;
+//	  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+//	  htim2.Init.Period = 0;
+//	  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+//	  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+//	  {
+//	    _Error_Handler(__FILE__, __LINE__);
+//	  }
+//
+//	  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+//	  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+//	  {
+//	    _Error_Handler(__FILE__, __LINE__);
+//	  }
+//
+//	  if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
+//	  {
+//	    _Error_Handler(__FILE__, __LINE__);
+//	  }
+
+	  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+	  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+	  {
+	    _Error_Handler(__FILE__, __LINE__);
+	  }
+
+	  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+	  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+	  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+	  sConfigIC.ICFilter = 0;
+	  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+	  {
+	    _Error_Handler(__FILE__, __LINE__);
+	  }
+}
+
 /** Configure pins as 
  * Analog
  * Input
@@ -233,7 +244,7 @@ void _Error_Handler(char * file, int line)
 void rtcSetGet(uint8_t argc, char **argv)
 {
 	RTC_TimeTypeDef time;
-	HW_RTC_getTime(&time);
+	rtc_getTime(&time);
 
 	if (argc == 1)
 	{
@@ -245,7 +256,7 @@ void rtcSetGet(uint8_t argc, char **argv)
 		time.Minutes = atoi(argv[2]);
 		time.Seconds = 0;
 
-		HW_RTC_setTime(time);
+		rtc_setTime(time);
 		printf("Set Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
 	}
 }
@@ -255,22 +266,22 @@ sTermEntry_t rtcEntry =
 void dateSetGet(uint8_t argc, char **argv)
 {
 
-	RTC_DateTypeDef date;
-	HW_RTC_getDate(&date);
-
-	if (argc == 1)
-	{
-		printf("Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
-	}
-	else if (argc == 4)
-	{
-		date.Date = atoi(argv[1]);
-		date.Month = atoi(argv[2]);
-		date.Year = atoi(argv[3]);
-
-		HW_RTC_setDate(date);
-		printf("Set Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
-	}
+//	RTC_DateTypeDef date;
+//	HW_RTC_getDate(&date);
+//
+//	if (argc == 1)
+//	{
+//		printf("Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+//	}
+//	else if (argc == 4)
+//	{
+//		date.Date = atoi(argv[1]);
+//		date.Month = atoi(argv[2]);
+//		date.Year = atoi(argv[3]);
+//
+//		HW_RTC_setDate(date);
+//		printf("Set Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+//	}
 }
 sTermEntry_t dateEntry =
 { "d", "Set/Get the date", dateSetGet };
