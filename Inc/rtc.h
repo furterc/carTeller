@@ -9,6 +9,7 @@
 #define SRC_RTC_H_
 
 #include "stm32l0xx_hal.h"
+#include "stm32l0xx.h"
 
 void rtc_init();
 void rtc_getTime(RTC_TimeTypeDef *time);

@@ -61,9 +61,15 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 1 */
 }
 
-/**
-* @brief This function handles USART2 RX interrupts.
-*/
+
+void HardFault_Handler(void)
+{
+    printf(RED("SEG FAULT\n"));
+
+    //reset processor
+    NVIC_SystemReset();
+}
+
 void USART2_IRQHandler(void)
 {
     if (USART2->ISR & UART_FLAG_RXNE)
@@ -84,9 +90,9 @@ void USART2_IRQHandler(void)
     }
 }
 
-void RTC_IRQHandler(void)
+void TIM2_IRQHandler(void)
 {
-//	HW_RTC_IrqHandler();
+	printf("poes\n");
 }
 
 /******************************************************************************/
