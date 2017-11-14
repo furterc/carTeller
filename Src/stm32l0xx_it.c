@@ -92,7 +92,19 @@ void USART2_IRQHandler(void)
 
 void TIM2_IRQHandler(void)
 {
-	printf("poes\n");
+    printf("sr1: 0x%08X\n", (int)TIM2->SR);
+    printf("ccr4: %d\n", (int)TIM2->CNT);
+    printf("ccr2: %d\n", (int)(TIM2->CCR2));
+
+	if(TIM2->SR & TIM_FLAG_CC2OF)
+	{
+	    printf("overflow!\n");
+	    TIM2->SR &= ~TIM_FLAG_CC2OF;
+	}
+
+
+
+	printf("sr2: 0x%08X\n", (int)TIM2->SR);
 }
 
 /******************************************************************************/

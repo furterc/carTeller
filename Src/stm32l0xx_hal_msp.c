@@ -47,27 +47,27 @@
 /**
   * Initializes the Global MSP.
   */
-void HAL_MspInit(void)
-{
-  /* USER CODE BEGIN MspInit 0 */
-
-  /* USER CODE END MspInit 0 */
-
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_PWR_CLK_ENABLE();
-
-  /* System interrupt init*/
-  /* SVC_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
-  /* PendSV_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-
-  /* USER CODE BEGIN MspInit 1 */
-
-  /* USER CODE END MspInit 1 */
-}
+//void HAL_MspInit(void)
+//{
+//  /* USER CODE BEGIN MspInit 0 */
+//
+//  /* USER CODE END MspInit 0 */
+//
+//  __HAL_RCC_SYSCFG_CLK_ENABLE();
+//  __HAL_RCC_PWR_CLK_ENABLE();
+//
+//  /* System interrupt init*/
+//  /* SVC_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(SVC_IRQn, 0, 0);
+//  /* PendSV_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(PendSV_IRQn, 0, 0);
+//  /* SysTick_IRQn interrupt configuration */
+//  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+//
+//  /* USER CODE BEGIN MspInit 1 */
+//
+//  /* USER CODE END MspInit 1 */
+//}
 
 void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
 {
@@ -123,11 +123,11 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
+	printf("me called\n");
 
   GPIO_InitTypeDef GPIO_InitStruct;
   if(htim_base->Instance==TIM2)
   {
-  /* USER CODE BEGIN TIM2_MspInit 0 */
 
   /* USER CODE END TIM2_MspInit 0 */
     /* Peripheral clock enable */
@@ -143,9 +143,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN TIM2_MspInit 1 */
-
-  /* USER CODE END TIM2_MspInit 1 */
   }
 
 }

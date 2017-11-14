@@ -49,7 +49,8 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 $(wildcard Src/*.c) \
-Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ex.c \
+$(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c)
+#Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_flash_ex.c \
 Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_pwr_ex.c \
 Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_i2c_ex.c \
 Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_dma.c \
