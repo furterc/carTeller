@@ -89,12 +89,22 @@ void USART2_IRQHandler(void)
         terminal_handleByte(c);
     }
 }
+extern uint8_t idx;
+extern uint16_t atime[2];
 
 void TIM2_IRQHandler(void)
 {
-    printf("sr1: 0x%08X\n", (int)TIM2->SR);
-    printf("ccr4: %d\n", (int)TIM2->CNT);
-    printf("ccr2: %d\n", (int)(TIM2->CCR2));
+    //printf("sr1: 0x%08X\n", (int)TIM2->SR);
+    //printf("ccr2: %d\n", (int)(TIM2->CCR2));
+
+	if(TIM2->CCER & (1 << 5))
+		atime[1] = TIM2->CCR2;
+	else
+		atime[0] = TIM2->CCR2;
+//	if(idx > 1)
+//		idx = 0;
+
+	TIM2->CCER |= (1 << 5);
 
 	if(TIM2->SR & TIM_FLAG_CC2OF)
 	{
@@ -104,7 +114,7 @@ void TIM2_IRQHandler(void)
 
 
 
-	printf("sr2: 0x%08X\n", (int)TIM2->SR);
+	//printf("sr2: 0x%08X\n", (int)TIM2->SR);
 }
 
 /******************************************************************************/

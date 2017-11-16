@@ -45,7 +45,8 @@
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
-
+#define P1_Pin GPIO_PIN_0
+#define P1_GPIO_Port GPIOB
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2

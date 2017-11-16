@@ -84,16 +84,39 @@ int main(void)
     printf("HCLKFreq:\t%d\n", (int)HAL_RCC_GetSysClockFreq());
     printf("HCLKFreq:\t%lu\n", HAL_RCC_GetHCLKFreq());
     /* Infinite loop */
-    printf("TIM2_CR1: 0x%02X\n", (int)READ_REG(TIM2->CR1));
-    printf("TIM2_DIER: 0x%02X\n", (int)READ_REG(TIM2->DIER));
-    printf("TIM2_SMCR: 0x%02X\n", (int)READ_REG(TIM2->SMCR));
-    printf("TIM2_EGR: 0x%02X\n", (int)READ_REG(TIM2->EGR));
-    printf("TIM2_CCER: 0x%02X\n", (int)READ_REG(TIM2->CCER));
+    printf("TIM2_CR1: 0x%04X\n", (int)READ_REG(TIM2->CR1));
+    printf("TIM2_DIER: 0x%04X\n", (int)READ_REG(TIM2->DIER));
+    printf("TIM2_ARR: 0x%04X\n", (int)READ_REG(TIM2->ARR));
+    printf("TIM2_SMCR: 0x%04X\n", (int)READ_REG(TIM2->SMCR));
+    printf("TIM2_CCMR: 0x%04X\n", (int)READ_REG(TIM2->CCMR1));
+    printf("TIM2_EGR: 0x%04X\n", (int)READ_REG(TIM2->EGR));
+    printf("TIM2_CCER: 0x%04X\n", (int)READ_REG(TIM2->CCER));
     while (1)
     {
         terminal_run();
     }
 }
+
+uint16_t atime[2];
+
+void pulse(uint8_t argc, char **argv)
+{
+    HAL_TIM_Base_Start(&htim2);
+
+    printf("atime: %04X  %04X %d\n", atime[0] , atime[1], atime[1] - atime[0]);
+
+    TIM2->CCER &= ~(1 << 5);
+
+    TIM2->CNT = 0;
+    HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
+	//printf("i pulsed it\n");
+}
+
+sTermEntry_t pulseEntry =
+{ "p", "pulsit", pulse};
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
@@ -145,61 +168,60 @@ sTermEntry_t dateEntry =
 void SystemClock_Config(void)
 {
 
-    RCC_OscInitTypeDef RCC_OscInitStruct;
-    RCC_ClkInitTypeDef RCC_ClkInitStruct;
-    RCC_PeriphCLKInitTypeDef PeriphClkInit;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
     /**Configure the main internal regulator output voltage 
-     */
-    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
     /**Initializes the CPU, AHB and APB busses clocks 
-     */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI
-            | RCC_OSCILLATORTYPE_MSI;
-    RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-    RCC_OscInitStruct.MSIState = RCC_MSI_ON;
-    RCC_OscInitStruct.MSICalibrationValue = 0;
-    RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_5;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
+    */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_4;
+  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
     /**Initializes the CPU, AHB and APB busses clocks 
-     */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-            | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_MSI;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2
-            | RCC_PERIPHCLK_RTC;
-    PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_I2C1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
 
     /**Configure the Systick interrupt time 
-     */
-    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / 1000);
+    */
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
     /**Configure the Systick 
-     */
-    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+    */
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-    /* SysTick_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+  /* SysTick_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /* TIM2 init function */
@@ -210,9 +232,9 @@ static void MX_TIM2_Init(void)
     TIM_IC_InitTypeDef sConfigIC;
 
     htim2.Instance = TIM2;
-    htim2.Init.Prescaler = 0xFFFF;
+    htim2.Init.Prescaler =0x7;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 0;
+    htim2.Init.Period = 0xFFFF;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
     {
@@ -241,7 +263,7 @@ static void MX_TIM2_Init(void)
         _Error_Handler(__FILE__, __LINE__);
     }
 
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
     sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
     sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
     sConfigIC.ICFilter = 0;
@@ -250,7 +272,6 @@ static void MX_TIM2_Init(void)
         _Error_Handler(__FILE__, __LINE__);
     }
 
-    HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
     HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
 }
@@ -275,6 +296,9 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOA_CLK_ENABLE()
     ;
 
+    __HAL_RCC_GPIOB_CLK_ENABLE()
+        ;
+
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
@@ -290,6 +314,13 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : P1_Pin */
+    GPIO_InitStruct.Pin = P1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(P1_GPIO_Port, &GPIO_InitStruct);
 
 }
 
