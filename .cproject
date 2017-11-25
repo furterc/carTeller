@@ -23,7 +23,7 @@
 							<builder id="cdt.managedbuild.builder.gnu.cross.1453860136" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1220302521" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.356728140" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="DSTM32L053xx"/>
+									<listOptionValue builtIn="false" value="STM32L053xx"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.504085856" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

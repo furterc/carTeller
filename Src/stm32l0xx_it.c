@@ -51,14 +51,8 @@
 */
 void SysTick_Handler(void)
 {
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
 }
 
 
@@ -106,10 +100,10 @@ void TIM2_IRQHandler(void)
 
 	TIM2->CCER |= (1 << 5);
 
-	if(TIM2->SR & TIM_FLAG_CC2OF)
+	if(TIM2->SR & TIM_FLAG_UPDATE)
 	{
 	    printf("overflow!\n");
-	    TIM2->SR &= ~TIM_FLAG_CC2OF;
+	    TIM2->SR &= ~TIM_FLAG_UPDATE;
 	}
 
 

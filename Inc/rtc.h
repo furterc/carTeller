@@ -14,5 +14,7 @@
 void rtc_init();
 void rtc_getTime(RTC_TimeTypeDef *time);
 void rtc_setTime(RTC_TimeTypeDef time);
+void rtc_getDate(RTC_DateTypeDef *date);
+void rtc_setDate(RTC_DateTypeDef date);
 
 #endif /* SRC_RTC_H_ */

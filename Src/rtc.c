@@ -26,9 +26,6 @@ static RTC_HandleTypeDef RtcHandle =
 
 void rtc_init()
 {
-//	 RTC_TimeTypeDef RTC_TimeStruct;
-//	  RTC_DateTypeDef RTC_DateStruct;
-
 	RtcHandle.Instance = RTC;
 
 	RtcHandle.Init.HourFormat = RTC_HOURFORMAT_24;
@@ -68,4 +65,14 @@ void rtc_getTime(RTC_TimeTypeDef *time)
 void rtc_setTime(RTC_TimeTypeDef time)
 {
 	HAL_RTC_SetTime(&RtcHandle, &time, RTC_FORMAT_BIN);
+}
+
+void rtc_getDate(RTC_DateTypeDef *date)
+{
+	HAL_RTC_GetDate(&RtcHandle, date, RTC_FORMAT_BIN);
+}
+
+void rtc_setDate(RTC_DateTypeDef date)
+{
+	HAL_RTC_SetDate(&RtcHandle, &date, RTC_FORMAT_BIN);
 }

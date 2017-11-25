@@ -94,25 +94,17 @@ int main(void)
     while (1)
     {
         terminal_run();
+
     }
 }
 
 uint16_t atime[2];
 
+void tim_pulse();
+
 void pulse(uint8_t argc, char **argv)
 {
-    HAL_TIM_Base_Start(&htim2);
-
-    printf("atime: %04X  %04X %d\n", atime[0] , atime[1], atime[1] - atime[0]);
-
-    TIM2->CCER &= ~(1 << 5);
-
-    TIM2->CNT = 0;
-    HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
-	//printf("i pulsed it\n");
+	tim_pulse();
 }
 
 sTermEntry_t pulseEntry =
@@ -143,26 +135,49 @@ sTermEntry_t rtcEntry =
 void dateSetGet(uint8_t argc, char **argv)
 {
 
-//	RTC_DateTypeDef date;
-//	HW_RTC_getDate(&date);
-//
-//	if (argc == 1)
-//	{
-//		printf("Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
-//	}
-//	else if (argc == 4)
-//	{
-//		date.Date = atoi(argv[1]);
-//		date.Month = atoi(argv[2]);
-//		date.Year = atoi(argv[3]);
-//
-//		HW_RTC_setDate(date);
-//		printf("Set Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
-//	}
+	RTC_DateTypeDef date;
+	rtc_getDate(&date);
+
+	if (argc == 1)
+	{
+		printf("Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+	}
+	else if (argc == 4)
+	{
+		date.Date = atoi(argv[1]);
+		date.Month = atoi(argv[2]);
+		date.Year = atoi(argv[3]);
+
+		rtc_setDate(date);
+		printf("Set Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+	}
 }
 sTermEntry_t dateEntry =
 { "d", "Set/Get the date", dateSetGet };
 
+
+void tim_pulse()
+{
+	HAL_TIM_Base_Start(&htim2);
+
+	int distance = atime[1] - atime[0];
+	distance /= 116;
+	printf("distance: %d\n", distance);
+	//    printf("atime: %d %d %d\n", atime[0] , atime[1], atime[1] - atime[0]);
+
+
+	// capture on rising edge
+	TIM2->CCER &= ~(1 << 5);
+
+	TIM2->CNT = 0;
+	printf("cnt: %d\n", (int)TIM2->CNT);
+	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
+	printf("cnt: %d\n", (int)TIM2->CNT);
+	//printf("i pulsed it\n");
+}
 /** System Clock Configuration
  */
 void SystemClock_Config(void)
@@ -232,7 +247,7 @@ static void MX_TIM2_Init(void)
     TIM_IC_InitTypeDef sConfigIC;
 
     htim2.Instance = TIM2;
-    htim2.Init.Prescaler =0x7;
+    htim2.Init.Prescaler =0x10;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
     htim2.Init.Period = 0xFFFF;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
