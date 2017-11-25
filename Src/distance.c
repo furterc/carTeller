@@ -1,0 +1,248 @@
+/*
+ * distance.c
+ *
+ *  Created on: 25 Nov 2017
+ *      Author: christo
+ */
+#include <stdbool.h>
+
+#include "distance.h"
+#include "stm32l0xx_hal.h"
+#include "terminal.h"
+
+#define DISTANCE_SAMPLE_START_DUTY	100		//startup time
+#define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
+#define DISTANCE_MAX				400*58		//450cm * multiplier
+#define DISTANCE_TIMEOUT			50			//ms
+
+TIM_HandleTypeDef htim2;
+distanceStates_t state = DISTANCE_UNKNOWN;
+
+uint16_t atime[2];
+bool dataAvailable = false;
+int lastSample = 0;
+
+void distance_Init()
+{
+	TIM_ClockConfigTypeDef sClockSourceConfig;
+	TIM_MasterConfigTypeDef sMasterConfig;
+	TIM_IC_InitTypeDef sConfigIC;
+
+	htim2.Instance = TIM2;
+	htim2.Init.Prescaler = 0x20;
+	htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim2.Init.Period = 0xFFFF;
+	htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+	if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	HAL_TIM_Base_Start(&htim2);
+
+	printf("TIM2_CR1: 0x%02X\n", (int) READ_REG(TIM2->CR1));
+	//    __HAL_TIM_ENABLE(&htim2);
+	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+	if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+	sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+	sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+	sConfigIC.ICFilter = 0;
+	if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
+	HAL_NVIC_EnableIRQ(TIM2_IRQn);
+
+	state = DISTANCE_STARTUP;
+}
+
+void distance_IoInit()
+{
+	GPIO_InitTypeDef GPIO_InitStruct;
+	/*Configure GPIO pin : P1_Pin */
+	GPIO_InitStruct.Pin = P1_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(P1_GPIO_Port, &GPIO_InitStruct);
+
+	/* Peripheral clock enable */
+	__HAL_RCC_TIM2_CLK_ENABLE();
+
+	/**TIM2 GPIO Configuration
+	 PA1     ------> TIM2_CH2
+	 */
+	GPIO_InitStruct.Pin = GPIO_PIN_1;
+	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	GPIO_InitStruct.Alternate = GPIO_AF2_TIM2;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+
+void distance_IoDeInit()
+{
+	HAL_GPIO_DeInit(P1_GPIO_Port, P1_Pin);
+
+	/* Peripheral clock disable */
+	__HAL_RCC_TIM2_CLK_DISABLE();
+
+	/**TIM2 GPIO Configuration
+	 PA0     ------> TIM2_CH1
+	 */
+	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0);
+}
+
+void distance_pulse()
+{
+	HAL_TIM_Base_Start(&htim2);
+
+	// capture on rising edge
+	TIM2->CCER &= ~(1 << 5);
+
+	TIM2->CNT = 0;
+	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
+
+	//
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
+}
+
+void distance_timerIrq()
+{
+	static uint8_t overflowCnt = 0;
+	if (TIM2->SR & TIM_FLAG_UPDATE)
+	{
+		//clear the flag
+		TIM2->SR &= ~TIM_FLAG_UPDATE;
+
+		//timer overflow
+		if (overflowCnt++ > 16)
+		{
+			printf("overflow!\n");
+
+			atime[1] = atime[0] + DISTANCE_MAX;
+			dataAvailable = true;
+			overflowCnt = 0;
+		}
+		return;
+	}
+
+	overflowCnt = 0;
+	if (TIM2->CCER & (1 << 5))
+	{
+		atime[1] = TIM2->CCR2;
+		dataAvailable = true;
+		return;
+	}
+
+	atime[0] = TIM2->CCR2;
+	TIM2->CCER |= (1 << 5);
+
+}
+
+void distance_run()
+{
+	switch (state)
+	{
+		case DISTANCE_STARTUP:
+		{
+			distance_pulse();
+			static uint32_t tickstart = 0U;
+
+			if (tickstart == 0)
+				tickstart = HAL_GetTick();
+
+			if ((HAL_GetTick() - tickstart) > DISTANCE_SAMPLE_START_DUTY)
+			{
+				tickstart = 0;
+				state = DISTANCE_START_SAMPLE;
+			}
+		}
+		break;
+		case DISTANCE_START_SAMPLE:
+		{
+			distance_pulse();
+			state = DISTANCE_SAMPLE;
+		}
+		break;
+		case DISTANCE_SAMPLE:
+		{
+			static uint8_t sampleCount = 0;
+			static int samples = 0;
+
+			static uint32_t tickstart = 0U;
+
+			if (!dataAvailable)
+			{
+				if (tickstart == 0)
+					tickstart = HAL_GetTick();
+
+				if ((HAL_GetTick() - tickstart) > DISTANCE_TIMEOUT)
+				{
+					tickstart = 0;
+					state = DISTANCE_STARTUP;
+				}
+				return;
+			}
+
+			tickstart = 0U;
+
+			int distance = atime[1] - atime[0];
+			distance /= 58;
+			samples += distance;
+			sampleCount++;
+			dataAvailable = false;
+//			printf("sample: %d\t: %d\n", sampleCount, distance);
+			state = DISTANCE_WAIT;
+
+			if (sampleCount == 16)
+			{
+				lastSample = samples >> 4;
+				printf(GREEN("lastSample\t: %d\n"), lastSample);
+				samples = 0;
+				sampleCount = 0;
+			}
+		}
+		break;
+		case DISTANCE_WAIT:
+		{
+			static uint32_t tickstart = 0U;
+
+			if (tickstart == 0)
+				tickstart = HAL_GetTick();
+
+			if ((HAL_GetTick() - tickstart) > DISTANCE_SAMPLE_DUTY)
+			{
+				tickstart = 0;
+				state = DISTANCE_START_SAMPLE;
+			}
+		}
+		break;
+		default:
+			state = DISTANCE_START_SAMPLE;
+
+	}
+
+}
+

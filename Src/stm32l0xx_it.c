@@ -35,10 +35,8 @@
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
 #include "terminal.h"
+#include "distance.h"
 
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 
@@ -83,32 +81,11 @@ void USART2_IRQHandler(void)
         terminal_handleByte(c);
     }
 }
-extern uint8_t idx;
-extern uint16_t atime[2];
 
 void TIM2_IRQHandler(void)
 {
-    //printf("sr1: 0x%08X\n", (int)TIM2->SR);
-    //printf("ccr2: %d\n", (int)(TIM2->CCR2));
+	distance_timerIrq();
 
-	if(TIM2->CCER & (1 << 5))
-		atime[1] = TIM2->CCR2;
-	else
-		atime[0] = TIM2->CCR2;
-//	if(idx > 1)
-//		idx = 0;
-
-	TIM2->CCER |= (1 << 5);
-
-	if(TIM2->SR & TIM_FLAG_UPDATE)
-	{
-	    printf("overflow!\n");
-	    TIM2->SR &= ~TIM_FLAG_UPDATE;
-	}
-
-
-
-	//printf("sr2: 0x%08X\n", (int)TIM2->SR);
 }
 
 /******************************************************************************/

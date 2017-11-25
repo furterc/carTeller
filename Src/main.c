@@ -42,18 +42,18 @@
 #include "rtc.h"
 #include "commands.h"
 #include "stdlib.h"
+#include "distance.h"
 
 /* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
 
-TIM_HandleTypeDef htim2;
+
 
 /* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_TIM2_Init(void);
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -72,8 +72,8 @@ int main(void)
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
-    MX_TIM2_Init();
 
+    distance_Init();
     rtc_init();
 
     printf(GREEN("me ready\n"));
@@ -94,17 +94,14 @@ int main(void)
     while (1)
     {
         terminal_run();
+        distance_run();
 
     }
 }
 
-uint16_t atime[2];
-
-void tim_pulse();
-
 void pulse(uint8_t argc, char **argv)
 {
-	tim_pulse();
+	distance_pulse();
 }
 
 sTermEntry_t pulseEntry =
@@ -156,28 +153,7 @@ sTermEntry_t dateEntry =
 { "d", "Set/Get the date", dateSetGet };
 
 
-void tim_pulse()
-{
-	HAL_TIM_Base_Start(&htim2);
 
-	int distance = atime[1] - atime[0];
-	distance /= 116;
-	printf("distance: %d\n", distance);
-	//    printf("atime: %d %d %d\n", atime[0] , atime[1], atime[1] - atime[0]);
-
-
-	// capture on rising edge
-	TIM2->CCER &= ~(1 << 5);
-
-	TIM2->CNT = 0;
-	printf("cnt: %d\n", (int)TIM2->CNT);
-	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
-	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
-	printf("cnt: %d\n", (int)TIM2->CNT);
-	//printf("i pulsed it\n");
-}
 /** System Clock Configuration
  */
 void SystemClock_Config(void)
@@ -237,58 +213,6 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-}
-
-/* TIM2 init function */
-static void MX_TIM2_Init(void)
-{
-    TIM_ClockConfigTypeDef sClockSourceConfig;
-    TIM_MasterConfigTypeDef sMasterConfig;
-    TIM_IC_InitTypeDef sConfigIC;
-
-    htim2.Instance = TIM2;
-    htim2.Init.Prescaler =0x10;
-    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 0xFFFF;
-    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    HAL_TIM_Base_Start(&htim2);
-
-    printf("TIM2_CR1: 0x%02X\n", (int)READ_REG(TIM2->CR1));
-//    __HAL_TIM_ENABLE(&htim2);
-    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 0;
-    if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
 }
 
 /** Configure pins as 
