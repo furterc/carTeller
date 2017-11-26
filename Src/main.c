@@ -76,26 +76,18 @@ int main(void)
     distance_Init();
     rtc_init();
 
-    printf(GREEN("me ready\n"));
+    printf(GREEN("terminal ready\n"));
 
-    printf("%s\n", __FILE__);
-    _Error_Handler(__FILE__, __LINE__);
-
-    printf("HCLKFreq:\t%d\n", (int)HAL_RCC_GetSysClockFreq());
-    printf("HCLKFreq:\t%lu\n", HAL_RCC_GetHCLKFreq());
+    printf(BLUE("SysClkFreq:\t%d\n"), (int)HAL_RCC_GetSysClockFreq());
     /* Infinite loop */
-    printf("TIM2_CR1: 0x%04X\n", (int)READ_REG(TIM2->CR1));
-    printf("TIM2_DIER: 0x%04X\n", (int)READ_REG(TIM2->DIER));
-    printf("TIM2_ARR: 0x%04X\n", (int)READ_REG(TIM2->ARR));
-    printf("TIM2_SMCR: 0x%04X\n", (int)READ_REG(TIM2->SMCR));
-    printf("TIM2_CCMR: 0x%04X\n", (int)READ_REG(TIM2->CCMR1));
-    printf("TIM2_EGR: 0x%04X\n", (int)READ_REG(TIM2->EGR));
-    printf("TIM2_CCER: 0x%04X\n", (int)READ_REG(TIM2->CCER));
     while (1)
     {
         terminal_run();
         distance_run();
 
+        int sample = 0;
+        if (distance_getLastSample(&sample))
+        	printf("Distance\t: %d\n", sample);
     }
 }
 

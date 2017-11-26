@@ -5,12 +5,12 @@
  *      Author: christo
  */
 #include <stdbool.h>
-
+#include <stdlib.h>
 #include "distance.h"
 #include "stm32l0xx_hal.h"
 #include "terminal.h"
 
-#define DISTANCE_SAMPLE_START_DUTY	100		//startup time
+#define DISTANCE_ECHO_TIMEOUT		200		//startup time
 #define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
 #define DISTANCE_MAX				400*58		//450cm * multiplier
 #define DISTANCE_TIMEOUT			50			//ms
@@ -21,6 +21,8 @@ distanceStates_t state = DISTANCE_UNKNOWN;
 uint16_t atime[2];
 bool dataAvailable = false;
 int lastSample = 0;
+
+uint8_t distanceDebug = 0;
 
 void distance_Init()
 {
@@ -40,8 +42,6 @@ void distance_Init()
 
 	HAL_TIM_Base_Start(&htim2);
 
-	printf("TIM2_CR1: 0x%02X\n", (int) READ_REG(TIM2->CR1));
-	//    __HAL_TIM_ENABLE(&htim2);
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
 	if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
 	{
@@ -72,7 +72,8 @@ void distance_Init()
 	HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
 	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
-	state = DISTANCE_STARTUP;
+	state = DISTANCE_UNKNOWN;
+	printf(CYAN("Distance initialized\n"));
 }
 
 void distance_IoInit()
@@ -122,7 +123,7 @@ void distance_pulse()
 	TIM2->CNT = 0;
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
-	//
+	// pulse the trig pin
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
 	HAL_Delay(1);
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
@@ -137,9 +138,10 @@ void distance_timerIrq()
 		TIM2->SR &= ~TIM_FLAG_UPDATE;
 
 		//timer overflow
-		if (overflowCnt++ > 16)
+		if (overflowCnt++ > 5)
 		{
-			printf("overflow!\n");
+			if (distanceDebug)
+				printf("overflow!\n");
 
 			atime[1] = atime[0] + DISTANCE_MAX;
 			dataAvailable = true;
@@ -165,61 +167,60 @@ void distance_run()
 {
 	switch (state)
 	{
-		case DISTANCE_STARTUP:
+		case DISTANCE_TRIG:
 		{
 			distance_pulse();
+			state = DISTANCE_WAIT_ECHO;
+		}
+		break;
+		case DISTANCE_WAIT_ECHO:
+		{
 			static uint32_t tickstart = 0U;
+
+			if (dataAvailable)
+			{
+				tickstart = 0;
+				state = DISTANCE_RECEIVE_SAMPLE;
+				return;
+			}
 
 			if (tickstart == 0)
 				tickstart = HAL_GetTick();
 
-			if ((HAL_GetTick() - tickstart) > DISTANCE_SAMPLE_START_DUTY)
+			if ((HAL_GetTick() - tickstart) > DISTANCE_ECHO_TIMEOUT)
 			{
+				if (distanceDebug)
+					printf(YELLOW("echo timeout\n"));
 				tickstart = 0;
-				state = DISTANCE_START_SAMPLE;
+				state = DISTANCE_TRIG;
 			}
 		}
 		break;
-		case DISTANCE_START_SAMPLE:
-		{
-			distance_pulse();
-			state = DISTANCE_SAMPLE;
-		}
-		break;
-		case DISTANCE_SAMPLE:
+		case DISTANCE_RECEIVE_SAMPLE:
 		{
 			static uint8_t sampleCount = 0;
 			static int samples = 0;
 
-			static uint32_t tickstart = 0U;
-
-			if (!dataAvailable)
-			{
-				if (tickstart == 0)
-					tickstart = HAL_GetTick();
-
-				if ((HAL_GetTick() - tickstart) > DISTANCE_TIMEOUT)
-				{
-					tickstart = 0;
-					state = DISTANCE_STARTUP;
-				}
-				return;
-			}
-
-			tickstart = 0U;
-
 			int distance = atime[1] - atime[0];
 			distance /= 58;
+
+			if (distance > 400)
+				distance = 400;
+
 			samples += distance;
 			sampleCount++;
 			dataAvailable = false;
-//			printf("sample: %d\t: %d\n", sampleCount, distance);
+
+			if (distanceDebug)
+				printf("sample: %d\t: %d\n", sampleCount, distance);
+
 			state = DISTANCE_WAIT;
 
 			if (sampleCount == 16)
 			{
 				lastSample = samples >> 4;
-				printf(GREEN("lastSample\t: %d\n"), lastSample);
+				if (distanceDebug)
+					printf(GREEN("SampleAverage\t: %d\n"), lastSample);
 				samples = 0;
 				sampleCount = 0;
 			}
@@ -235,14 +236,39 @@ void distance_run()
 			if ((HAL_GetTick() - tickstart) > DISTANCE_SAMPLE_DUTY)
 			{
 				tickstart = 0;
-				state = DISTANCE_START_SAMPLE;
+				state = DISTANCE_TRIG;
 			}
 		}
 		break;
 		default:
-			state = DISTANCE_START_SAMPLE;
-
+			state = DISTANCE_WAIT_ECHO;
 	}
-
 }
 
+uint8_t distance_getLastSample(int *sample)
+{
+	if (!lastSample)
+		return 0;
+
+	*sample = lastSample;
+	lastSample = 0;
+	return 1;
+}
+
+
+void distance_debug(uint8_t argc, char **argv)
+{
+	if (argc != 2)
+	{
+		printf("1 - debug enabled \n\r0 - debug disabled\n");
+		return;
+	}
+
+	if (atoi(argv[1]) == 1)
+		distanceDebug = 1;
+	else
+		distanceDebug = 0;
+}
+
+sTermEntry_t ddebugEntry =
+{ "dd", "distanceDebug", distance_debug};
