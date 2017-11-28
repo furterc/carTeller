@@ -43,6 +43,8 @@
 #include "commands.h"
 #include "stdlib.h"
 #include "distance.h"
+#include "nvm.h"
+#include "carCheck.h"
 
 /* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
@@ -79,6 +81,8 @@ int main(void)
     printf(GREEN("terminal ready\n"));
 
     printf(BLUE("SysClkFreq:\t%d\n"), (int)HAL_RCC_GetSysClockFreq());
+
+    car_check_Init();
     /* Infinite loop */
     while (1)
     {
@@ -87,7 +91,7 @@ int main(void)
 
         int sample = 0;
         if (distance_getLastSample(&sample))
-        	printf("Distance\t: %d\n", sample);
+        	car_check_Run(sample);
     }
 }
 
