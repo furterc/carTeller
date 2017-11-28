@@ -8,6 +8,10 @@
 #ifndef INC_CARCHECK_H_
 #define INC_CARCHECK_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 typedef enum
 {
 	CARCHECK_STATE_UNKNOWN,
@@ -21,5 +25,8 @@ typedef enum
 void car_check_Init();
 void car_check_Run(int distance);
 
+#ifdef __cplusplus
+ }
+#endif
 
 #endif /* INC_CARCHECK_H_ */

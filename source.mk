@@ -25,6 +25,10 @@ C_SOURCES =  \
 $(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c) \
 $(wildcard Src/*.c)
 
+# C++ sources
+CXX_SOURCES =  \
+$(wildcard Src/*.cpp)
+
 # ASM sources
 ASM_SOURCES =  \
 startup_stm32l053xx.s

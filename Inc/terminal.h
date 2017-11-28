@@ -47,12 +47,17 @@
 #define MAGENTA_B(__x)    COLOR_BOLD(5, __x )
 #define CYAN_B(__x)        COLOR_BOLD(6, __x )
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 typedef struct
 {
-    char *cmd;
-    char *description;
+    const char *cmd;
+    const char *description;
     void (*cmdFunc)(uint8_t argc, char **argv);
 } sTermEntry_t;
+
 
 void terminal_init();
 void terminal_deInit();
@@ -60,5 +65,9 @@ void terminal_ioInit();
 void terminal_ioDeInit();
 uint8_t terminal_run();
 void terminal_handleByte(uint8_t byte);
+
+#ifdef __cplusplus
+ }
+#endif
 
 #endif

@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 typedef enum
 {
 	DISTANCE_UNKNOWN,
@@ -29,5 +33,8 @@ void distance_timerIrq();
 void distance_run();
 uint8_t distance_getLastSample(int *sample);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_DISTANCE_H_ */

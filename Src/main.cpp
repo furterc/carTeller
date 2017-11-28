@@ -54,8 +54,7 @@ RTC_HandleTypeDef hrtc;
 /* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
+
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -218,7 +217,7 @@ void SystemClock_Config(void)
  * EVENT_OUT
  * EXTI
  */
-static void MX_GPIO_Init(void)
+void MX_GPIO_Init(void)
 {
 
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -264,7 +263,7 @@ static void MX_GPIO_Init(void)
  * @param  None
  * @retval None
  */
-void _Error_Handler(char * file, int line)
+void _Error_Handler(const char * file, int line)
 {
     /* USER CODE BEGIN Error_Handler_Debug */
     /* User can add his own implementation to report the HAL error return state */
