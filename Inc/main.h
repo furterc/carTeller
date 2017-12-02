@@ -39,7 +39,7 @@
 #ifndef __MAIN_H
 #define __MAIN_H
   /* Includes ------------------------------------------------------------------*/
-
+#include "stm32l0xx.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -69,6 +69,7 @@
 #endif
 
  void SystemClock_Config(void);
+ void MX_FREERTOS_Init(void);
  void MX_GPIO_Init(void);
 
 void _Error_Handler(const char *, int);
