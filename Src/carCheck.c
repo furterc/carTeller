@@ -15,6 +15,8 @@ carCheckState_t carState = CARCHECK_STATE_UNKNOWN;
 RTC_TimeTypeDef startTime;
 RTC_TimeTypeDef endTime;
 
+//c
+
 int triggerDistance;
 int triggerTime;
 
@@ -55,6 +57,7 @@ void car_check_Run(int distance)
 
 			if (carCount > triggerTime)
 			{
+
 				carState = CARCHECK_STATE_START;
 				return;
 			}

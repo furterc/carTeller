@@ -728,35 +728,23 @@ typedef struct
   * @{
   */
 #define __HAL_RCC_GPIOA_CLK_ENABLE()   do { \
-                                        __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
                                         /* Delay after an RCC peripheral clock enabling */ \
-                                        tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOAEN);\
-                                        UNUSED(tmpreg); \
                                       } while(0)
                                       
 #define __HAL_RCC_GPIOB_CLK_ENABLE()   do { \
-                                        __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);\
                                         /* Delay after an RCC peripheral clock enabling */ \
-                                        tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOBEN);\
-                                        UNUSED(tmpreg); \
                                       } while(0)
                                       
 #define __HAL_RCC_GPIOC_CLK_ENABLE()   do { \
-                                        __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN);\
                                         /* Delay after an RCC peripheral clock enabling */ \
-                                        tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOCEN);\
-                                        UNUSED(tmpreg); \
                                       } while(0)
 
 #define __HAL_RCC_GPIOH_CLK_ENABLE()   do { \
-                                        __IO uint32_t tmpreg; \
                                         SET_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN);\
                                         /* Delay after an RCC peripheral clock enabling */ \
-                                        tmpreg = READ_BIT(RCC->IOPENR, RCC_IOPENR_GPIOHEN);\
-                                        UNUSED(tmpreg); \
                                       } while(0)
 
 
