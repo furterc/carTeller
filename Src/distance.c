@@ -159,16 +159,18 @@ void distance_timerIrq()
 	}
 
 	atime[0] = TIM2->CCR2;
-	TIM2->CCER |= (1 << 5);
 
+	TIM2->CCER |= (1 << 5);
 }
 
 void distance_run()
 {
+//	printf("r: %d\n", state);
 	switch (state)
 	{
 		case DISTANCE_TRIG:
 		{
+			printf("p\n");
 			distance_pulse();
 			state = DISTANCE_WAIT_ECHO;
 		}

@@ -113,23 +113,23 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
 
 }
 
-//void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
-//{
-//  if(htim_base->Instance==TIM2)
-//  {
-//	distance_IoInit();
-//  }
-//
-//}
-//
-//void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
-//{
-//  if(htim_base->Instance==TIM2)
-//  {
-//    distance_IoDeInit();
-//  }
-//
-//}
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
+{
+  if(htim_base->Instance==TIM2)
+  {
+	distance_IoInit();
+  }
+
+}
+
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
+{
+  if(htim_base->Instance==TIM2)
+  {
+    distance_IoDeInit();
+  }
+
+}
 
 void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {

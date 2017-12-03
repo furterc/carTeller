@@ -90,7 +90,7 @@ int main(void)
     /* Infinite loop */
     while (1)
     {
-//        terminal_run();
+//
 //        distance_run();
 //
 //        int sample = 0;

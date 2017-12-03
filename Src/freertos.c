@@ -51,6 +51,9 @@
 #include "task.h"
 #include "cmsis_os.h"
 #include "main.h"
+#include "terminal.h"
+#include "distance.h"
+#include "carCheck.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -58,6 +61,7 @@
 
 /* Variables -----------------------------------------------------------------*/
 osThreadId defaultTaskHandle;
+osThreadId samplerTaskHandle;
 
 /* USER CODE BEGIN Variables */
 
@@ -65,6 +69,7 @@ osThreadId defaultTaskHandle;
 
 /* Function prototypes -------------------------------------------------------*/
 void StartDefaultTask(void const * argument);
+void StartSamplerTask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -96,8 +101,11 @@ void MX_FREERTOS_Init(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 512);
+
+	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -115,14 +123,33 @@ void StartDefaultTask(void const * argument)
 	/* Infinite loop */
 	for (;;)
 	{
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-		osDelay(100);
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-		osDelay(100);
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-		osDelay(100);
-		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-		osDelay(800);
+		terminal_run();
+
+
+//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+//		osDelay(100);
+//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+//		osDelay(100);
+//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+//		osDelay(100);
+//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+//		osDelay(800);
+	}
+	/* USER CODE END StartDefaultTask */
+}
+
+void StartSamplerTask(void const * argument)
+{
+	/* USER CODE BEGIN StartDefaultTask */
+	/* Infinite loop */
+	for (;;)
+	{
+		osDelay(1);
+		distance_run();
+
+		int sample = 0;
+		        if (distance_getLastSample(&sample))
+		        	car_check_Run(sample);
 	}
 	/* USER CODE END StartDefaultTask */
 }
