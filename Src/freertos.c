@@ -62,6 +62,7 @@
 /* Variables -----------------------------------------------------------------*/
 osThreadId defaultTaskHandle;
 osThreadId samplerTaskHandle;
+osThreadId terminalTaskHandle;
 
 /* USER CODE BEGIN Variables */
 
@@ -70,6 +71,7 @@ osThreadId samplerTaskHandle;
 /* Function prototypes -------------------------------------------------------*/
 void StartDefaultTask(void const * argument);
 void StartSamplerTask(void const * argument);
+void StartTerminalTask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -101,11 +103,12 @@ void MX_FREERTOS_Init(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
-	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 512);
-
+//	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+//	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 256);
 	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
+	osThreadDef(terminalTask, StartTerminalTask, osPriorityNormal, 0, 256);
+	terminalTaskHandle = osThreadCreate(osThread(terminalTask), NULL);
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -123,17 +126,14 @@ void StartDefaultTask(void const * argument)
 	/* Infinite loop */
 	for (;;)
 	{
-		terminal_run();
-
-
-//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-//		osDelay(100);
-//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-//		osDelay(100);
-//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-//		osDelay(100);
-//		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-//		osDelay(800);
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		osDelay(100);
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		osDelay(100);
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		osDelay(100);
+		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		osDelay(800);
 	}
 	/* USER CODE END StartDefaultTask */
 }
@@ -144,15 +144,29 @@ void StartSamplerTask(void const * argument)
 	/* Infinite loop */
 	for (;;)
 	{
-		osDelay(1);
+//		osDelay(1000);
+//		printf("osTick: %d\n", (int)osKernelSysTick());
 		distance_run();
 
 		int sample = 0;
-		        if (distance_getLastSample(&sample))
-		        	car_check_Run(sample);
+		if (distance_getLastSample(&sample))
+			car_check_Run(sample);
 	}
 	/* USER CODE END StartDefaultTask */
 }
+
+/* StartDefaultTask function */
+void StartTerminalTask(void const * argument)
+{
+	/* USER CODE BEGIN StartDefaultTask */
+	/* Infinite loop */
+	for (;;)
+	{
+		terminal_run();
+	}
+	/* USER CODE END StartDefaultTask */
+}
+
 
 /* USER CODE BEGIN Application */
 

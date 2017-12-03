@@ -9,11 +9,12 @@
 #include "distance.h"
 #include "stm32l0xx_hal.h"
 #include "terminal.h"
+#include "cmsis_os.h"
 
-#define DISTANCE_ECHO_TIMEOUT		200		//startup time
+#define DISTANCE_ECHO_TIMEOUT		2000		//startup time
 #define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
 #define DISTANCE_MAX				400*58		//450cm * multiplier
-#define DISTANCE_TIMEOUT			50			//ms
+#define DISTANCE_TIMEOUT			100			//ms
 
 TIM_HandleTypeDef htim2;
 distanceStates_t state = DISTANCE_UNKNOWN;
@@ -125,7 +126,7 @@ void distance_pulse()
 
 	// pulse the trig pin
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
+	osDelay(1);
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
 }
 
@@ -165,12 +166,10 @@ void distance_timerIrq()
 
 void distance_run()
 {
-//	printf("r: %d\n", state);
 	switch (state)
 	{
 		case DISTANCE_TRIG:
 		{
-			printf("p\n");
 			distance_pulse();
 			state = DISTANCE_WAIT_ECHO;
 		}
@@ -187,11 +186,11 @@ void distance_run()
 			}
 
 			if (tickstart == 0)
-				tickstart = HAL_GetTick();
+				tickstart = osKernelSysTick();
 
-			if ((HAL_GetTick() - tickstart) > DISTANCE_ECHO_TIMEOUT)
+			if ((osKernelSysTick() - tickstart) > DISTANCE_ECHO_TIMEOUT)
 			{
-				if (distanceDebug)
+				if (distanceDebug == 1)
 					printf(YELLOW("echo timeout\n"));
 				tickstart = 0;
 				state = DISTANCE_TRIG;
@@ -213,7 +212,7 @@ void distance_run()
 			sampleCount++;
 			dataAvailable = false;
 
-			if (distanceDebug)
+			if (distanceDebug == 2)
 				printf("sample: %d\t: %d\n", sampleCount, distance);
 
 			state = DISTANCE_WAIT;
@@ -233,9 +232,9 @@ void distance_run()
 			static uint32_t tickstart = 0U;
 
 			if (tickstart == 0)
-				tickstart = HAL_GetTick();
+				tickstart = osKernelSysTick();
 
-			if ((HAL_GetTick() - tickstart) > DISTANCE_SAMPLE_DUTY)
+			if ((osKernelSysTick() - tickstart) > DISTANCE_SAMPLE_DUTY)
 			{
 				tickstart = 0;
 				state = DISTANCE_TRIG;
@@ -262,14 +261,19 @@ void distance_debug(uint8_t argc, char **argv)
 {
 	if (argc != 2)
 	{
-		printf("1 - debug enabled \n\r0 - debug disabled\n");
+		printf("n - debug lvl enabled \n\r0 - debug disabled\n");
 		return;
 	}
 
-	if (atoi(argv[1]) == 1)
-		distanceDebug = 1;
-	else
-		distanceDebug = 0;
+	uint8_t lvl = atoi(argv[1]);
+
+	if (lvl > 2)
+		lvl = 2;
+
+	if (lvl < 0)
+		lvl = 0;
+
+	distanceDebug = lvl;
 }
 
 sTermEntry_t ddebugEntry =
