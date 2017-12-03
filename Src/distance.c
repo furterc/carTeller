@@ -229,16 +229,8 @@ void distance_run()
 		break;
 		case DISTANCE_WAIT:
 		{
-			static uint32_t tickstart = 0U;
-
-			if (tickstart == 0)
-				tickstart = osKernelSysTick();
-
-			if ((osKernelSysTick() - tickstart) > DISTANCE_SAMPLE_DUTY)
-			{
-				tickstart = 0;
-				state = DISTANCE_TRIG;
-			}
+			osDelay(DISTANCE_SAMPLE_DUTY);
+			state = DISTANCE_TRIG;
 		}
 		break;
 		default:
