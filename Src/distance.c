@@ -176,25 +176,22 @@ void distance_run()
 		break;
 		case DISTANCE_WAIT_ECHO:
 		{
-			static uint32_t tickstart = 0U;
-
-			if (dataAvailable)
+			uint8_t cnt = DISTANCE_ECHO_TIMEOUT/10;
+			while(!dataAvailable && cnt)
 			{
-				tickstart = 0;
-				state = DISTANCE_RECEIVE_SAMPLE;
-				return;
+				osDelay(10);
+				cnt--;
 			}
 
-			if (tickstart == 0)
-				tickstart = osKernelSysTick();
-
-			if ((osKernelSysTick() - tickstart) > DISTANCE_ECHO_TIMEOUT)
+			if (cnt == 0)
 			{
 				if (distanceDebug == 1)
 					printf(YELLOW("echo timeout\n"));
-				tickstart = 0;
 				state = DISTANCE_TRIG;
+				return;
 			}
+
+			state = DISTANCE_RECEIVE_SAMPLE;
 		}
 		break;
 		case DISTANCE_RECEIVE_SAMPLE:

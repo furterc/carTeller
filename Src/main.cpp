@@ -48,6 +48,8 @@
 #include "nvm.h"
 #include "carCheck.h"
 
+#include "spi.h"
+
 /* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
 
@@ -68,20 +70,6 @@ int main(void)
     /* Configure the system clock */
     SystemClock_Config();
 
-    /* Initialize the terminal */
-    terminal_init();
-
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-
-    distance_Init();
-    rtc_init();
-
-    printf(GREEN("terminal ready\n"));
-
-    printf(BLUE("SysClkFreq:\t%d\n"), (int)HAL_RCC_GetSysClockFreq());
-
-    car_check_Init();
 
     MX_FREERTOS_Init();
 
@@ -90,14 +78,18 @@ int main(void)
     /* Infinite loop */
     while (1)
     {
-//
-//        distance_run();
-//
-//        int sample = 0;
-//        if (distance_getLastSample(&sample))
-//        	car_check_Run(sample);
     }
 }
+
+void spiTry(uint8_t argc, char **argv)
+{
+
+	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
+//	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
+}
+
+sTermEntry_t spiEntry =
+{ "s", "spishit", spiTry};
 
 void pulse(uint8_t argc, char **argv)
 {

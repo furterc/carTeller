@@ -54,6 +54,8 @@
 #include "terminal.h"
 #include "distance.h"
 #include "carCheck.h"
+#include "rtc.h"
+#include "spi.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -87,6 +89,23 @@ void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
+    /* Initialize the terminal */
+    terminal_init();
+    printf(GREEN("terminal ready\n"));
+
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+
+    distance_Init();
+    rtc_init();
+
+    printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
+
+
+    MX_SPI1_Init();
+
+    car_check_Init();
+
 	/* USER CODE END Init */
 
 	/* USER CODE BEGIN RTOS_MUTEX */
@@ -103,10 +122,10 @@ void MX_FREERTOS_Init(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-//	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
-//	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 256);
-	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
+	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
+	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+//	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 256);
+//	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
 	osThreadDef(terminalTask, StartTerminalTask, osPriorityNormal, 0, 256);
 	terminalTaskHandle = osThreadCreate(osThread(terminalTask), NULL);
 
@@ -122,7 +141,6 @@ void MX_FREERTOS_Init(void)
 /* StartDefaultTask function */
 void StartDefaultTask(void const * argument)
 {
-	/* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
 	for (;;)
 	{
@@ -135,12 +153,10 @@ void StartDefaultTask(void const * argument)
 		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 		osDelay(800);
 	}
-	/* USER CODE END StartDefaultTask */
 }
 
 void StartSamplerTask(void const * argument)
 {
-	/* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
 	for (;;)
 	{
@@ -152,24 +168,17 @@ void StartSamplerTask(void const * argument)
 		if (distance_getLastSample(&sample))
 			car_check_Run(sample);
 	}
-	/* USER CODE END StartDefaultTask */
 }
 
 /* StartDefaultTask function */
 void StartTerminalTask(void const * argument)
 {
-	/* USER CODE BEGIN StartDefaultTask */
 	/* Infinite loop */
 	for (;;)
 	{
 		terminal_run();
 	}
-	/* USER CODE END StartDefaultTask */
 }
 
-
-/* USER CODE BEGIN Application */
-
-/* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
