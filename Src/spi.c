@@ -91,7 +91,7 @@ void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SpiFrequency( 1000000 );;
+  hspi1.Init.BaudRatePrescaler = SpiFrequency( 10000000 );;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -123,9 +123,16 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     PA7     ------> SPI1_MOSI
     PB3     ------> SPI1_SCK 
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -170,6 +177,23 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
   }
 } 
 
+
+uint16_t HW_SPI_ClearBuff( uint16_t txData )
+{
+  uint8_t rxData[4] ;
+
+//  osDelay(500);
+  HAL_SPI_Receive(&hspi1, ( uint8_t* ) &rxData,  4, HAL_MAX_DELAY);
+//  HAL_SPI_Receive(&hspi1,3, HAL_MAX_DELAY);
+
+  for(uint8_t i = 0; i <  4; i++)
+	  printf("2-%d - 0x%02X\n", i, rxData[i]);
+//  HAL_SPI_TransmitReceive( &hspi1, ( uint8_t * ) &txData, ( uint8_t* ) &rxData, 1, HAL_MAX_DELAY);
+
+  return 0;
+}
+
+
 /*!
  * @brief Sends outData and receives inData
  *
@@ -178,17 +202,32 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
  */
 uint16_t HW_SPI_InOut( uint16_t txData )
 {
-  uint8_t rxData[3] ;
+  uint8_t rxData[4] ;
 
-  HAL_SPI_Transmit(&hspi1, ( uint8_t* ) &txData, 1, HAL_MAX_DELAY);
-  HAL_SPI_Receive(&hspi1, ( uint8_t* ) &rxData, 3, HAL_MAX_DELAY);
+  HAL_SPI_TransmitReceive(&hspi1, ( uint8_t* ) &txData, ( uint8_t* ) &rxData,  4, HAL_MAX_DELAY);
+//  HAL_SPI_Transmit(&hspi1, ( uint8_t* ) &txData,  1, HAL_MAX_DELAY);
+//  HAL_SPI_Receive(&hspi1,( uint8_t* ) rxData, 3, HAL_MAX_DELAY);
 
-  for(uint8_t i = 0; i <  3; i++)
+  for(uint8_t i = 0; i <  4; i++)
 	  printf("%d - 0x%02X\n", i, rxData[i]);
-//  HAL_SPI_TransmitReceive( &hspi1, ( uint8_t * ) &txData, ( uint8_t* ) &rxData, 1, HAL_MAX_DELAY);
 
-  return rxData;
+//  HW_SPI_ClearBuff(0);
+  return 0;
 }
+
+HAL_StatusTypeDef spi_read_array(uint16_t address, uint8_t *rxData, uint8_t len)
+{
+	uint8_t opCode = 0x03;
+	uint8_t add[2];
+	add[0] = address & 0xFF;
+	add[1] = (address >> 8) & 0xFF;
+
+	HAL_SPI_Transmit(&hspi1, &opCode,  1, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, add,  2, HAL_MAX_DELAY);
+	HAL_SPI_Receive(&hspi1,( uint8_t* ) rxData, len, HAL_MAX_DELAY);
+	return HAL_OK;
+}
+
 
 /* USER CODE BEGIN 1 */
 

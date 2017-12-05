@@ -83,13 +83,49 @@ int main(void)
 
 void spiTry(uint8_t argc, char **argv)
 {
-
 	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
+
+
+
 //	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
 }
 
 sTermEntry_t spiEntry =
 { "s", "spishit", spiTry};
+
+void RspiTry(uint8_t argc, char **argv)
+{
+	uint8_t cnt = atoi(argv[1]);
+
+	printf("read %d bytes from 0x1000\b", cnt);
+
+	uint8_t data[50];
+
+	spi_read_array(0x1000, data, cnt);
+
+	for(int i=0; i < cnt; i++)
+		printf("data %X\n", data[i]);
+}
+
+sTermEntry_t readspiEntry =
+{ "rs", "spishitread", RspiTry};
+
+void WspiTry(uint8_t argc, char **argv)
+{
+	uint8_t cnt = atoi(argv[1]);
+
+	printf("read %d bytes from 0x1000\b", cnt);
+
+	uint8_t data[50];
+
+	spi_read_array(0x1000, data, cnt);
+
+	for(int i=0; i < cnt; i++)
+		printf("data %X\n", data[i]);
+}
+
+sTermEntry_t writespiEntry =
+{ "ws", "spishitwrite", WspiTry};
 
 void pulse(uint8_t argc, char **argv)
 {

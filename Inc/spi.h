@@ -73,6 +73,8 @@ void MX_SPI1_Init(void);
 
 uint16_t HW_SPI_InOut( uint16_t outData );
 
+HAL_StatusTypeDef spi_read_array(uint16_t address, uint8_t *rxData, uint8_t len);
+
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */
