@@ -50,6 +50,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "spi.h"
 #include "terminal.h"
+#include "cmsis_os.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -80,6 +81,12 @@ static uint32_t SpiFrequency( uint32_t hz )
 }
 
 
+HAL_SPI_StateTypeDef HW_SPI_GetState()
+{
+	return HAL_SPI_GetState(&hspi1);
+}
+
+
 /* SPI1 init function */
 void MX_SPI1_Init(void)
 {
@@ -90,7 +97,7 @@ void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.BaudRatePrescaler = SpiFrequency( 10000000 );;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
@@ -131,11 +138,13 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = GPIO_PIN_4;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+//    GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
 
     GPIO_InitStruct.Pin = GPIO_PIN_3;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -149,6 +158,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
   /* USER CODE END SPI1_MspInit 1 */
   }
 }
+
 
 void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 {
@@ -204,27 +214,78 @@ uint16_t HW_SPI_InOut( uint16_t txData )
 {
   uint8_t rxData[4] ;
 
-  HAL_SPI_TransmitReceive(&hspi1, ( uint8_t* ) &txData, ( uint8_t* ) &rxData,  4, HAL_MAX_DELAY);
+//  CLEAR_BIT(SPI1->CR1, SPI_CR1_SSI);
+
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, RESET);
+
+  HAL_SPI_TransmitReceive(&hspi1, ( uint8_t* ) &txData, ( uint8_t* ) &rxData,  4, 100);
 //  HAL_SPI_Transmit(&hspi1, ( uint8_t* ) &txData,  1, HAL_MAX_DELAY);
 //  HAL_SPI_Receive(&hspi1,( uint8_t* ) rxData, 3, HAL_MAX_DELAY);
 
   for(uint8_t i = 0; i <  4; i++)
 	  printf("%d - 0x%02X\n", i, rxData[i]);
 
+
+  printf("state: %d\n", HAL_SPI_GetState(&hspi1));
+
+//  SET_BIT(SPI1->CR1, SPI_CR1_SSI);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
+
+//  hspi1.Init.Mode = SPI_MODE_SLAVE;
+//  osDelay(100);
+//  hspi1.Init.Mode = SPI_MODE_MASTER;
 //  HW_SPI_ClearBuff(0);
   return 0;
 }
 
 HAL_StatusTypeDef spi_read_array(uint16_t address, uint8_t *rxData, uint8_t len)
 {
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, RESET);
 	uint8_t opCode = 0x03;
-	uint8_t add[2];
-	add[0] = address & 0xFF;
-	add[1] = (address >> 8) & 0xFF;
+	uint8_t add[3];
+	add[0] = 0;
+	add[1] = address & 0xFF;
+	add[2] = (address >> 8) & 0xFF;
 
 	HAL_SPI_Transmit(&hspi1, &opCode,  1, HAL_MAX_DELAY);
-	HAL_SPI_Transmit(&hspi1, add,  2, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, add,  3, HAL_MAX_DELAY);
 	HAL_SPI_Receive(&hspi1,( uint8_t* ) rxData, len, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
+	return HAL_OK;
+}
+
+HAL_StatusTypeDef spi_write_array(uint16_t address, uint8_t len)
+{
+	//transmit write enable
+	uint8_t opCode = 0x06;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, RESET);
+	HAL_SPI_Transmit(&hspi1, &opCode,  1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
+
+	osDelay(10);
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, RESET);
+	opCode = 0x02;
+	uint8_t add[3];
+	add[0] = 0;
+	add[1] = address & 0xFF;
+	add[2] = (address >> 8) & 0xFF;
+
+	uint8_t buffer[5] = {0x01, 0x02, 0x03, 0x04, 0x05};
+
+	HAL_SPI_Transmit(&hspi1, &opCode,  1, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, add,  3, HAL_MAX_DELAY);
+	HAL_SPI_Transmit(&hspi1, buffer,  sizeof(buffer), HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
+
+	osDelay(10);
+
+	//transmit write disable
+	opCode = 0x04;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, RESET);
+	HAL_SPI_Transmit(&hspi1, &opCode,  1, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, SET);
+
 	return HAL_OK;
 }
 

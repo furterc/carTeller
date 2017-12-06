@@ -75,6 +75,10 @@ uint16_t HW_SPI_InOut( uint16_t outData );
 
 HAL_StatusTypeDef spi_read_array(uint16_t address, uint8_t *rxData, uint8_t len);
 
+HAL_StatusTypeDef spi_write_array(uint16_t address, uint8_t len);
+
+HAL_SPI_StateTypeDef HW_SPI_GetState();
+
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */

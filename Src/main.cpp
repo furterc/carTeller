@@ -112,16 +112,11 @@ sTermEntry_t readspiEntry =
 
 void WspiTry(uint8_t argc, char **argv)
 {
-	uint8_t cnt = atoi(argv[1]);
+	spi_write_array(0x1000, 1);
 
-	printf("read %d bytes from 0x1000\b", cnt);
-
-	uint8_t data[50];
-
-	spi_read_array(0x1000, data, cnt);
-
-	for(int i=0; i < cnt; i++)
-		printf("data %X\n", data[i]);
+	printf("SPI_CR1: 0x%08X\n", (int)READ_REG(SPI1->CR1));
+	printf("SPI_CR2: 0x%08X\n", (int)READ_REG(SPI1->CR2));
+	printf("state: %d\n", HW_SPI_GetState());
 }
 
 sTermEntry_t writespiEntry =

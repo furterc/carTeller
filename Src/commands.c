@@ -10,6 +10,7 @@ extern const sTermEntry_t rtcEntry;
 extern const sTermEntry_t dateEntry;
 extern const sTermEntry_t pulseEntry;
 extern const sTermEntry_t spiEntry;
+extern const sTermEntry_t writespiEntry;
 extern const sTermEntry_t readspiEntry;
 extern const sTermEntry_t ddebugEntry;
 extern const sTermEntry_t carDistEntry;
@@ -23,6 +24,7 @@ const sTermEntry_t *term_entries[] =
         &rtcEntry,
 		&dateEntry,
 		&spiEntry,
+		&writespiEntry,
 		&readspiEntry,
 		&pulseEntry,
 		&ddebugEntry,
