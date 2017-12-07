@@ -47,8 +47,9 @@
 #include "distance.h"
 #include "nvm.h"
 #include "carCheck.h"
-
 #include "spi.h"
+
+//#include "spitry.h"
 
 /* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
@@ -60,6 +61,10 @@ RTC_HandleTypeDef hrtc;
 
 /* Private function prototypes -----------------------------------------------*/
 
+cSPI spi1 = cSPI();
+
+
+
 int main(void)
 {
     /* MCU Configuration----------------------------------------------------------*/
@@ -69,6 +74,23 @@ int main(void)
 
     /* Configure the system clock */
     SystemClock_Config();
+
+    /* Initialize the terminal */
+    terminal_init();
+    printf(GREEN("terminal ready\n"));
+
+    /* Initialize all configured peripherals */
+    MX_GPIO_Init();
+
+    distance_Init();
+    rtc_init();
+
+    printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
+
+    spi1.init(SPI1, (uint32_t)10000000);
+
+    car_check_Init();
+
 
 
     MX_FREERTOS_Init();
@@ -83,7 +105,10 @@ int main(void)
 
 void spiTry(uint8_t argc, char **argv)
 {
-	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
+	uint8_t data[3];
+	spi1.readId(data, 3);
+
+	printf("spi id: 0x%02X 0x%02X 0x%02X\n", data[0], data[1], data[2]);
 
 
 
@@ -101,26 +126,33 @@ void RspiTry(uint8_t argc, char **argv)
 
 	uint8_t data[50];
 
-	spi_read_array(0x1000, data, cnt);
+	spi1.read(0x0, data, cnt);
 
 	for(int i=0; i < cnt; i++)
 		printf("data %X\n", data[i]);
 }
 
 sTermEntry_t readspiEntry =
-{ "rs", "spishitread", RspiTry};
+{ "sr", "spishitread", RspiTry};
 
 void WspiTry(uint8_t argc, char **argv)
-{
-	spi_write_array(0x1000, 1);
 
-	printf("SPI_CR1: 0x%08X\n", (int)READ_REG(SPI1->CR1));
-	printf("SPI_CR2: 0x%08X\n", (int)READ_REG(SPI1->CR2));
-	printf("state: %d\n", HW_SPI_GetState());
+{
+	uint8_t data[4] = { 0xFF, 0x01, 0x00, 0x04};
+	spi1.write(0x0, data, 4);
 }
 
 sTermEntry_t writespiEntry =
-{ "ws", "spishitwrite", WspiTry};
+{ "sw", "spishitwrite", WspiTry};
+
+void EspiTry(uint8_t argc, char **argv)
+{
+	spi1.erase(0x0, 4);
+}
+
+sTermEntry_t erasespiEntry =
+{ "se", "spi erase", EspiTry};
+
 
 void pulse(uint8_t argc, char **argv)
 {

@@ -68,8 +68,10 @@
  extern "C" {
 #endif
 
+
+
  void SystemClock_Config(void);
- void MX_FREERTOS_Init(void);
+ extern void MX_FREERTOS_Init(void);
  void MX_GPIO_Init(void);
 
 void _Error_Handler(const char *, int);

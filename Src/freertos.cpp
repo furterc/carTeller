@@ -55,8 +55,6 @@
 #include "distance.h"
 #include "carCheck.h"
 #include "rtc.h"
-#include "spi.h"
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -78,7 +76,10 @@ void StartTerminalTask(void const * argument);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* USER CODE BEGIN FunctionPrototypes */
-
+void HAL_Delay(__IO uint32_t Delay)
+{
+	osDelay(Delay);
+}
 /* USER CODE END FunctionPrototypes */
 
 /* Hook prototypes */
@@ -89,22 +90,7 @@ void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-    /* Initialize the terminal */
-    terminal_init();
-    printf(GREEN("terminal ready\n"));
 
-    /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-
-    distance_Init();
-    rtc_init();
-
-    printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
-
-
-    MX_SPI1_Init();
-
-    car_check_Init();
 
 	/* USER CODE END Init */
 

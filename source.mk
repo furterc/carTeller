@@ -23,6 +23,7 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 $(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c) \
+$(wildcard Drivers/BSP/Utils/Src/*.c) \
 $(wildcard Middlewares/Third_Party/FreeRTOS/Source/*.c) \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
@@ -31,7 +32,8 @@ $(wildcard Src/*.c)
 
 # C++ sources
 CXX_SOURCES =  \
-$(wildcard Src/*.cpp)
+$(wildcard Src/*.cpp) \
+$(wildcard Drivers/BSP/Utils/Src/*.cpp)
 
 # ASM sources
 ASM_SOURCES =  \
@@ -46,6 +48,7 @@ C_DEFS =  \
 C_INCLUDES =  \
 -IInc \
 -IDrivers/STM32L0xx_HAL_Driver/Inc \
+-IDrivers/BSP/Utils/Inc \
 -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32L0xx/Include \
 -IDrivers/CMSIS/Include \
