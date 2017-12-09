@@ -116,12 +116,11 @@ void distance_IoDeInit()
 
 void distance_pulse()
 {
-	HAL_TIM_Base_Start(&htim2);
-
+	TIM2->CNT = 0;
 	// capture on rising edge
 	TIM2->CCER &= ~(1 << 5);
 
-	TIM2->CNT = 0;
+	HAL_TIM_Base_Start(&htim2);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
 	// pulse the trig pin

@@ -38,6 +38,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l0xx_hal.h"
+#include "stm32l0xx_hal_conf.h"
 #include "cmsis_os.h"
 #include "FreeRTOSConfig.h"
 #include "terminal.h"
@@ -48,6 +49,7 @@
 #include "nvm.h"
 #include "carCheck.h"
 #include "spi.h"
+#include "car_wash.h"
 
 //#include "spitry.h"
 
@@ -64,9 +66,11 @@ RTC_HandleTypeDef hrtc;
 cSPI spi1 = cSPI();
 
 
+cCarWash carInBay1 = cCarWash(1, 25, 12, 17);
 
 int main(void)
 {
+
     /* MCU Configuration----------------------------------------------------------*/
 
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
@@ -86,6 +90,16 @@ int main(void)
     rtc_init();
 
     printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
+
+    carInBay1.start(10, 15, 10);
+    carInBay1.end(10, 22, 37);
+
+    uint8_t data[8];
+    printf ("got %d bytes\n",carInBay1.getBytes(data));
+    for(int i=0;i<8;i++)
+    	printf("%d  ",data[i]);
+
+    printf("\n");
 
     spi1.init(SPI1, (uint32_t)10000000);
 
