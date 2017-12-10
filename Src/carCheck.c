@@ -10,12 +10,13 @@
 #include "terminal.h"
 #include "nvm.h"
 #include "rtc.h"
+//#include "car_wash.h"
 
 carCheckState_t carState = CARCHECK_STATE_UNKNOWN;
 RTC_TimeTypeDef startTime;
 RTC_TimeTypeDef endTime;
 
-//c
+
 
 int triggerDistance;
 int triggerTime;
@@ -28,6 +29,7 @@ void car_check_Init()
 	printf(GREEN("dist: %d\n"), triggerDistance);
 	printf(GREEN("time: %d\n"), triggerTime);
 }
+
 
 
 void car_check_Run(int distance)

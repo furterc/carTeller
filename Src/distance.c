@@ -116,7 +116,7 @@ void distance_IoDeInit()
 
 void distance_pulse()
 {
-	TIM2->CNT = 0;
+//	TIM2->CNT = 0;
 	// capture on rising edge
 	TIM2->CCER &= ~(1 << 5);
 
@@ -131,26 +131,26 @@ void distance_pulse()
 
 void distance_timerIrq()
 {
-	static uint8_t overflowCnt = 0;
-	if (TIM2->SR & TIM_FLAG_UPDATE)
-	{
-		//clear the flag
-		TIM2->SR &= ~TIM_FLAG_UPDATE;
+//	static uint8_t overflowCnt = 0;
+//	if (TIM2->SR & TIM_FLAG_UPDATE)
+//	{
+//		//clear the flag
+//		TIM2->SR &= ~TIM_FLAG_UPDATE;
+//		printf("o!\n");
+//		//timer overflow
+//		if (overflowCnt++ > 5)
+//		{
+//			if (distanceDebug)
+//				printf("overflow!\n");
+//
+//			atime[1] = atime[0] + DISTANCE_MAX;
+//			dataAvailable = true;
+//			overflowCnt = 0;
+//		}
+//		return;
+//	}
 
-		//timer overflow
-		if (overflowCnt++ > 5)
-		{
-			if (distanceDebug)
-				printf("overflow!\n");
-
-			atime[1] = atime[0] + DISTANCE_MAX;
-			dataAvailable = true;
-			overflowCnt = 0;
-		}
-		return;
-	}
-
-	overflowCnt = 0;
+//	overflowCnt = 0;
 	if (TIM2->CCER & (1 << 5))
 	{
 		atime[1] = TIM2->CCR2;
@@ -196,20 +196,41 @@ void distance_run()
 		case DISTANCE_RECEIVE_SAMPLE:
 		{
 			static uint8_t sampleCount = 0;
-			static int samples = 0;
+			static uint32_t samples = 0;
 
-			int distance = atime[1] - atime[0];
+
+			uint32_t distance = atime[1] - atime[0];
+
+			if ((distance & 0xFFFF0000) == 0xFFFF0000)
+			{
+				printf("fkp\n");
+				distance &= ~(0xFFFF0000);
+			}
+
+
+			if (distanceDebug == 3)
+			{
+				printf("atime[0] : 0x%08X\n", (unsigned int)atime[0]);
+				printf("atime[1] : 0x%08X\n", (unsigned int)atime[1]);
+				printf(GREEN("distance : 0x%08X\n"), (unsigned int)distance);
+			}
+
+
 			distance /= 58;
 
 			if (distance > 400)
+			{
+//				printf("fkp\n");
 				distance = 400;
+			}
+
 
 			samples += distance;
 			sampleCount++;
 			dataAvailable = false;
 
 			if (distanceDebug == 2)
-				printf("sample: %d\t: %d\n", sampleCount, distance);
+				printf("sample: %d\t: %d\n", sampleCount, (unsigned int)distance);
 
 			state = DISTANCE_WAIT;
 
@@ -255,8 +276,8 @@ void distance_debug(uint8_t argc, char **argv)
 
 	uint8_t lvl = atoi(argv[1]);
 
-	if (lvl > 2)
-		lvl = 2;
+	if (lvl > 3)
+		lvl = 3;
 
 	if (lvl < 0)
 		lvl = 0;
