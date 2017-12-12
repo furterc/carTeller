@@ -79,13 +79,14 @@ void distance_Init()
 
 void distance_IoInit()
 {
-	GPIO_InitTypeDef GPIO_InitStruct;
-	/*Configure GPIO pin : P1_Pin */
-	GPIO_InitStruct.Pin = P1_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(P1_GPIO_Port, &GPIO_InitStruct);
+	printf("was hier\n");
+//	GPIO_InitTypeDef GPIO_InitStruct;
+//	/*Configure GPIO pin : P1_Pin */
+//	GPIO_InitStruct.Pin = P1_Pin;
+//	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//	GPIO_InitStruct.Pull = GPIO_NOPULL;
+//	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+//	HAL_GPIO_Init(P1_GPIO_Port, &GPIO_InitStruct);
 
 	/* Peripheral clock enable */
 	__HAL_RCC_TIM2_CLK_ENABLE();
@@ -93,6 +94,7 @@ void distance_IoInit()
 	/**TIM2 GPIO Configuration
 	 PA1     ------> TIM2_CH2
 	 */
+	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Pin = GPIO_PIN_1;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -151,107 +153,105 @@ void distance_timerIrq()
 //	}
 
 //	overflowCnt = 0;
-	if (TIM2->CCER & (1 << 5))
+	if (READ_BIT(TIM2->SR, TIM_SR_CC2IF))
 	{
-		atime[1] = TIM2->CCR2;
-		dataAvailable = true;
-		return;
+		if (TIM2->CCER & (1 << 5))
+		{
+			atime[1] = TIM2->CCR2;
+			dataAvailable = true;
+			return;
+		}
+
+		atime[0] = TIM2->CCR2;
+
+		TIM2->CCER |= (1 << 5);
 	}
-
-	atime[0] = TIM2->CCR2;
-
-	TIM2->CCER |= (1 << 5);
 }
 
 void distance_run()
 {
 	switch (state)
 	{
-		case DISTANCE_TRIG:
-		{
-			distance_pulse();
-			state = DISTANCE_WAIT_ECHO;
-		}
+	case DISTANCE_TRIG:
+	{
+		distance_pulse();
+		state = DISTANCE_WAIT_ECHO;
+	}
 		break;
-		case DISTANCE_WAIT_ECHO:
+	case DISTANCE_WAIT_ECHO:
+	{
+		uint8_t cnt = DISTANCE_ECHO_TIMEOUT / 10;
+		while (!dataAvailable && cnt)
 		{
-			uint8_t cnt = DISTANCE_ECHO_TIMEOUT/10;
-			while(!dataAvailable && cnt)
-			{
-				osDelay(10);
-				cnt--;
-			}
-
-			if (cnt == 0)
-			{
-				if (distanceDebug == 1)
-					printf(YELLOW("echo timeout\n"));
-				state = DISTANCE_TRIG;
-				return;
-			}
-
-			state = DISTANCE_RECEIVE_SAMPLE;
+			osDelay(10);
+			cnt--;
 		}
-		break;
-		case DISTANCE_RECEIVE_SAMPLE:
+
+		if (cnt == 0)
 		{
-			static uint8_t sampleCount = 0;
-			static uint32_t samples = 0;
-
-
-			uint32_t distance = atime[1] - atime[0];
-
-			if ((distance & 0xFFFF0000) == 0xFFFF0000)
-			{
-				printf("fkp\n");
-				distance &= ~(0xFFFF0000);
-			}
-
-
-			if (distanceDebug == 3)
-			{
-				printf("atime[0] : 0x%08X\n", (unsigned int)atime[0]);
-				printf("atime[1] : 0x%08X\n", (unsigned int)atime[1]);
-				printf(GREEN("distance : 0x%08X\n"), (unsigned int)distance);
-			}
-
-
-			distance /= 58;
-
-			if (distance > 400)
-			{
-//				printf("fkp\n");
-				distance = 400;
-			}
-
-
-			samples += distance;
-			sampleCount++;
-			dataAvailable = false;
-
-			if (distanceDebug == 2)
-				printf("sample: %d\t: %d\n", sampleCount, (unsigned int)distance);
-
-			state = DISTANCE_WAIT;
-
-			if (sampleCount == 16)
-			{
-				lastSample = samples >> 4;
-				if (distanceDebug)
-					printf(GREEN("SampleAverage\t: %d\n"), lastSample);
-				samples = 0;
-				sampleCount = 0;
-			}
-		}
-		break;
-		case DISTANCE_WAIT:
-		{
-			osDelay(DISTANCE_SAMPLE_DUTY);
+			if (distanceDebug == 1)
+				printf(YELLOW("echo timeout\n"));
 			state = DISTANCE_TRIG;
+			return;
 		}
+
+		state = DISTANCE_RECEIVE_SAMPLE;
+	}
 		break;
-		default:
-			state = DISTANCE_WAIT_ECHO;
+	case DISTANCE_RECEIVE_SAMPLE:
+	{
+		static uint8_t sampleCount = 0;
+		static uint32_t samples = 0;
+
+		uint32_t distance = atime[1] - atime[0];
+
+		if ((distance & 0xFFFF0000) == 0xFFFF0000)
+		{
+			distance &= ~(0xFFFF0000);
+		}
+
+		if (distanceDebug == 3)
+		{
+			printf("atime[0] : 0x%08X\n", (unsigned int) atime[0]);
+			printf("atime[1] : 0x%08X\n", (unsigned int) atime[1]);
+			printf(GREEN("distance : 0x%08X\n"), (unsigned int) distance);
+		}
+
+		distance /= 58;
+
+		if (distance > 400)
+		{
+//				printf("fkp\n");
+			distance = 400;
+		}
+
+		samples += distance;
+		sampleCount++;
+		dataAvailable = false;
+
+		if (distanceDebug == 2)
+			printf("sample: %d\t: %d\n", sampleCount, (unsigned int) distance);
+
+		state = DISTANCE_WAIT;
+
+		if (sampleCount == 16)
+		{
+			lastSample = samples >> 4;
+			if (distanceDebug)
+				printf(GREEN("SampleAverage\t: %d\n"), lastSample);
+			samples = 0;
+			sampleCount = 0;
+		}
+	}
+		break;
+	case DISTANCE_WAIT:
+	{
+		osDelay(DISTANCE_SAMPLE_DUTY);
+		state = DISTANCE_TRIG;
+	}
+		break;
+	default:
+		state = DISTANCE_WAIT_ECHO;
 	}
 }
 
@@ -264,7 +264,6 @@ uint8_t distance_getLastSample(int *sample)
 	lastSample = 0;
 	return 1;
 }
-
 
 void distance_debug(uint8_t argc, char **argv)
 {
@@ -286,4 +285,4 @@ void distance_debug(uint8_t argc, char **argv)
 }
 
 sTermEntry_t ddebugEntry =
-{ "dd", "distanceDebug", distance_debug};
+{ "dd", "distanceDebug", distance_debug };

@@ -57,7 +57,10 @@
 #include "rtc.h"
 /* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+//#include "output.h"
+//#include "distance_sensor.h"
+//#include "ic_timer.h"
+///* USER CODE END Includes */
 
 /* Variables -----------------------------------------------------------------*/
 osThreadId defaultTaskHandle;
@@ -86,11 +89,17 @@ void HAL_Delay(__IO uint32_t Delay)
 
 /* Init FreeRTOS */
 
+//cDistanceSensor *distPrt = 0;
+
 void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-
+//	cOutput trig = cOutput(GPIOB, GPIO_PIN_0);
+//	    	cDistanceSensor dist = cDistanceSensor(&trig, 400, 2);
+//	    	distPrt = &dist;
+//	    	IcTimer.init();
+//	    	IcTimer.initSensor(2, &dist);
 
 	/* USER CODE END Init */
 
@@ -148,6 +157,16 @@ void StartSamplerTask(void const * argument)
 	{
 //		osDelay(1000);
 //		printf("osTick: %d\n", (int)osKernelSysTick());
+
+//		if(!distPrt)
+//			return;
+//
+//		distPrt->run();
+//
+//		uint16_t tmp = distPrt->getLastSample();
+
+//		if (tmp)
+//			printf("dist: %d\n", tmp);
 		distance_run();
 
 		int sample = 0;

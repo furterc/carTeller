@@ -66,10 +66,13 @@ RTC_HandleTypeDef hrtc;
 cSPI spi1 = cSPI();
 
 
+
+
 cCarWash carInBay1 = cCarWash(1, 25, 12, 17);
 
 int main(void)
 {
+
 
     /* MCU Configuration----------------------------------------------------------*/
 
@@ -85,6 +88,8 @@ int main(void)
 
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
+
+
 
     distance_Init();
     rtc_init();
@@ -170,7 +175,7 @@ sTermEntry_t erasespiEntry =
 
 void pulse(uint8_t argc, char **argv)
 {
-	distance_pulse();
+//	distance_pulse();
 }
 
 sTermEntry_t pulseEntry =

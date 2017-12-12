@@ -7,7 +7,7 @@
 
 #include "output.h"
 
-cOutput::cOutput(uint32_t pin, GPIO_TypeDef *port)
+cOutput::cOutput(GPIO_TypeDef *port, uint32_t pin)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Pin = pin;

@@ -15,7 +15,7 @@ class cOutput {
 	uint32_t mPin;
 	GPIO_TypeDef *mPort;
 public:
-	cOutput(uint32_t pin, GPIO_TypeDef *port);
+	cOutput(GPIO_TypeDef *port, uint32_t pin);
 	virtual ~cOutput();
 
 	void set();

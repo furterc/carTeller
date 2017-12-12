@@ -6,6 +6,8 @@
  */
 
 #include "distance_sensor.h"
+#include "ic_timer.h"
+
 
 cDistanceSensor::cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t sensorNumber)
 {
@@ -48,6 +50,9 @@ cDistanceSensor::~cDistanceSensor()
 
 void cDistanceSensor::pulse()
 {
+
+	CLEAR_BIT(TIM2->CCER, TIM_CCER_CC2P);
+	IcTimer.startTimIC();
 	mTrigger->set();
 	HAL_Delay(1);
 	mTrigger->reset();
@@ -56,6 +61,7 @@ void cDistanceSensor::pulse()
 void cDistanceSensor::setStart(uint16_t start)
 {
 	mTickStart = start;
+	SET_BIT(TIM2->CCER, TIM_CCER_CC2P);
 }
 
 void cDistanceSensor::setEnd(uint16_t end)

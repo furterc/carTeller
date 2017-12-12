@@ -26,6 +26,7 @@ public:
 
 	void init();
 	void initSensor(uint8_t sensorNumber, cDistanceSensor *sensor);
+	void startTimIC();
 	void timerIrq();
 };
 
