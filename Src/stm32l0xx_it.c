@@ -83,11 +83,11 @@ void USART2_IRQHandler(void)
     }
 }
 
-void TIM2_IRQHandler(void)
-{
-	distance_timerIrq();
-
-}
+//void TIM2_IRQHandler(void)
+//{
+//	distance_timerIrq();
+//
+//}
 
 void TIM6_DAC_IRQHandler(void)
 {

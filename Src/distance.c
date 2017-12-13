@@ -152,20 +152,20 @@ void distance_timerIrq()
 //		return;
 //	}
 
-//	overflowCnt = 0;
-	if (READ_BIT(TIM2->SR, TIM_SR_CC2IF))
-	{
-		if (TIM2->CCER & (1 << 5))
-		{
-			atime[1] = TIM2->CCR2;
-			dataAvailable = true;
-			return;
-		}
-
-		atime[0] = TIM2->CCR2;
-
-		TIM2->CCER |= (1 << 5);
-	}
+////	overflowCnt = 0;
+//	if (READ_BIT(TIM2->SR, TIM_SR_CC2IF))
+//	{
+//		if (TIM2->CCER & (1 << 5))
+//		{
+//			atime[1] = TIM2->CCR2;
+//			dataAvailable = true;
+//			return;
+//		}
+//
+//		atime[0] = TIM2->CCR2;
+//
+//		TIM2->CCER |= (1 << 5);
+//	}
 }
 
 void distance_run()

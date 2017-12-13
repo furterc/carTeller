@@ -18,8 +18,8 @@
 class cDistanceSensor
 {
 	cOutput *mTrigger;
-	uint16_t mTickStart;
-	uint16_t mTickEnd;
+	uint32_t mTickStart;
+	uint32_t mTickEnd;
 	uint16_t mMaxDistance;
 
 	uint16_t mLastSample;
@@ -42,9 +42,14 @@ public:
 	virtual ~cDistanceSensor();
 
 	void pulse();
+	cOutput *getTrigger()
+	{
+		return mTrigger;
+	}
 
-	void setStart(uint16_t start);
-	void setEnd(uint16_t end);
+
+	void setStart(uint32_t start);
+	void setEnd(uint32_t end);
 	void setDataAvailable();
 	uint32_t getIcChannel();
 

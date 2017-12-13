@@ -52,7 +52,7 @@
 #include "cmsis_os.h"
 #include "main.h"
 #include "terminal.h"
-#include "distance.h"
+//#include "distance.h"
 #include "carCheck.h"
 #include "rtc.h"
 /* USER CODE BEGIN Includes */
@@ -88,18 +88,33 @@ void HAL_Delay(__IO uint32_t Delay)
 /* Hook prototypes */
 
 /* Init FreeRTOS */
+#include "output.h"
+#include "distance_sensor.h"
+#include "ic_timer.h"
 
+cDistanceSensor *distPrt = 0;
 //cDistanceSensor *distPrt = 0;
 
 void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-//	cOutput trig = cOutput(GPIOB, GPIO_PIN_0);
-//	    	cDistanceSensor dist = cDistanceSensor(&trig, 400, 2);
-//	    	distPrt = &dist;
-//	    	IcTimer.init();
-//	    	IcTimer.initSensor(2, &dist);
+	cOutput trig = cOutput(GPIOB, GPIO_PIN_0);
+	printf(GREEN("ps: %p mTrigger\n"), &trig);
+
+	cDistanceSensor dist = cDistanceSensor(&trig, 400, 2);
+	distPrt = &dist;
+	IcTimer.init();
+	IcTimer.initSensor(2, &dist);
+
+	printf("p: dist\t\t: 0x%p\n", &dist);
+	printf("p: disttrggrr1\t: 0x%p\n", dist.getTrigger());
+	printf("p: disttrggrr2\t: 0x%p\n", distPrt->getTrigger());
+	printf("hi\n");
+
+//	dist.pulse();
+
+//	distPrt->pulse();
 
 	/* USER CODE END Init */
 
@@ -155,23 +170,26 @@ void StartSamplerTask(void const * argument)
 	/* Infinite loop */
 	for (;;)
 	{
-//		osDelay(1000);
+		printf("p: distptr\t: 0x%p\n", distPrt);
+		printf("p: disttrigger\t: 0x%p\n", distPrt->getTrigger());
+		osDelay(1000);
 //		printf("osTick: %d\n", (int)osKernelSysTick());
 
 //		if(!distPrt)
 //			return;
 //
 //		distPrt->run();
-//
+
 //		uint16_t tmp = distPrt->getLastSample();
+
 
 //		if (tmp)
 //			printf("dist: %d\n", tmp);
-		distance_run();
+//		distance_run();
 
 		int sample = 0;
-		if (distance_getLastSample(&sample))
-			car_check_Run(sample);
+//		if (distance_getLastSample(&sample))
+//			car_check_Run(sample);
 	}
 }
 

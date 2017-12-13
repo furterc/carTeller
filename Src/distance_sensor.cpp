@@ -7,12 +7,17 @@
 
 #include "distance_sensor.h"
 #include "ic_timer.h"
+#include "terminal.h"
+#include "cmsis_os.h"
 
 
 cDistanceSensor::cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t sensorNumber)
 {
 	mTrigger = trigger;
+	printf(GREEN("ps: %p dist\n"), trigger);
 	mTrigger->reset();
+
+	printf(GREEN("ps: %p dist\n"), trigger);
 
 	mMaxDistance = maxDistance;
 	mTickStart = 0;
@@ -52,21 +57,26 @@ void cDistanceSensor::pulse()
 {
 
 	CLEAR_BIT(TIM2->CCER, TIM_CCER_CC2P);
-	IcTimer.startTimIC();
+//	IcTimer.startTimIC();
+	printf(GREEN("ps: %p pulse\n"), mTrigger);
+
 	mTrigger->set();
-	HAL_Delay(1);
+	printf(GREEN("s\n"));
+	osDelay(1);
 	mTrigger->reset();
+	printf(GREEN("posrw\n"));
 }
 
-void cDistanceSensor::setStart(uint16_t start)
+void cDistanceSensor::setStart(uint32_t start)
 {
 	mTickStart = start;
 	SET_BIT(TIM2->CCER, TIM_CCER_CC2P);
 }
 
-void cDistanceSensor::setEnd(uint16_t end)
+void cDistanceSensor::setEnd(uint32_t end)
 {
 	mTickEnd = end;
+	mDataAvailable = true;
 }
 
 void cDistanceSensor::setDataAvailable()
@@ -85,6 +95,7 @@ void cDistanceSensor::run()
 	{
 	case DISTANCE_TRIG:
 	{
+		printf(YELLOW("pulse\n"));
 		pulse();
 		state = DISTANCE_WAIT_ECHO;
 	}
@@ -94,18 +105,20 @@ void cDistanceSensor::run()
 		uint8_t cnt = DISTANCE_ECHO_TIMEOUT / 10;
 		while (!mDataAvailable && cnt)
 		{
+			printf(GREEN("w\n"));
 			HAL_Delay(10);
+			printf(GREEN("w2\n"));
 			cnt--;
 		}
 
 		if (cnt == 0)
 		{
 //			if (distanceDebug == 1)
-//				printf(YELLOW("echo timeout\n"));
+				printf(YELLOW("echo timeout\n"));
 			state = DISTANCE_TRIG;
 			return;
 		}
-
+		printf(GREEN("data available\n"));
 		state = DISTANCE_RECEIVE_SAMPLE;
 	}
 		break;
@@ -114,7 +127,10 @@ void cDistanceSensor::run()
 		static uint8_t sampleCount = 0;
 		static uint32_t samples = 0;
 
+//		printf("mTickEnd: %0x%04X\n", mTickEnd);
+//		printf("mTickStart: %0x%04X\n", mTickStart);
 		uint32_t distance = mTickEnd - mTickStart;
+//		printf("Distance: %0x%04X\n", distance);
 
 		if ((distance & 0xFFFF0000) == 0xFFFF0000)
 			distance &= ~(0xFFFF0000);

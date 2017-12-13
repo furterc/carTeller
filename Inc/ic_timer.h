@@ -14,10 +14,10 @@
 
 class cIcTimer
 {
-	cDistanceSensor *mSensor1 = 0;
-	cDistanceSensor *mSensor2 = 0;
-	cDistanceSensor *mSensor3 = 0;
-	cDistanceSensor *mSensor4 = 0;
+//	cDistanceSensor *mSensor1 = 0;
+//	cDistanceSensor *mSensor2 = 0;
+//	cDistanceSensor *mSensor3 = 0;
+//	cDistanceSensor *mSensor4 = 0;
 	cDistanceSensor *mSensors[4];
 	TIM_HandleTypeDef htim2;
 public:

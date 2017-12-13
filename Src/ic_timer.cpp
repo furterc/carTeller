@@ -12,10 +12,10 @@
 
 cIcTimer::cIcTimer()
 {
-	mSensors[0] = mSensor1;
-	mSensors[1] = mSensor2;
-	mSensors[2] = mSensor3;
-	mSensors[3] = mSensor4;
+//	mSensors[0] = mSensor1;
+//	mSensors[1] = mSensor2;
+//	mSensors[2] = mSensor3;
+//	mSensors[3] = mSensor4;
 
 }
 
@@ -74,17 +74,27 @@ void cIcTimer::initSensor(uint8_t sensorNumber, cDistanceSensor *sensor)
 	printf("2\n");
 	sensorNumber--;
 
+	printf("snsNr: %d\n", sensorNumber);
 	printf("3\n");
-	if (mSensors[sensorNumber] == 0)
+//	if (mSensors[sensorNumber] == 0)
 		mSensors[sensorNumber] = sensor;
+
+
 
 	printf("4\n");
 	uint32_t icConfig = 0;
 
 	for (uint8_t idx = 0; idx < 4; idx++)
 	{
+		printf("idx: %d\n", idx);
 		if (mSensors[idx])
+		{
+			printf("p: msens\t\t: 0x%p\n", mSensors[idx]);
+//			printf("p: msen\t\t: 0x%p\n", mSensor2);
+			printf("ja: %d\n", idx);
 			icConfig |= mSensors[idx]->getIcChannel();
+		}
+
 	}
 
 	printf("5\n");
@@ -115,27 +125,28 @@ void cIcTimer::timerIrq()
 {
 	if (READ_BIT(TIM2->SR, TIM_SR_CC2IF))
 	{
-		if(mSensor2 == 0)
-			return;
+//		if(mSensor2 == 0)
+//			return;
 		//tweede keer
 		if (TIM2->CCER & (1 << 5))
 		{
-			mSensor2->setEnd(TIM2->CCR2);
-			mSensor2->setDataAvailable();
+			printf("p: rim\t\t: 0x%p\n", mSensors[1]);
+			mSensors[1]->setEnd(TIM2->CCR2);
+			mSensors[1]->setDataAvailable();
 			return;
 		}
 
-		mSensor2->setStart(TIM2->CCR2);
+		mSensors[1]->setStart(TIM2->CCR2);
 
 	}
 
 }
-//extern "C" {
-//void TIM2_IRQHandler(void)
-//{
-//	//	IcTimer.timerIrq();
-//	//	distance_timerIrq();
-//}
-//}
+extern "C" {
+void TIM2_IRQHandler(void)
+{
+		IcTimer.timerIrq();
+	//	distance_timerIrq();
+}
+}
 cIcTimer IcTimer = cIcTimer();
 
