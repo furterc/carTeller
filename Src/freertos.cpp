@@ -95,21 +95,19 @@ void HAL_Delay(__IO uint32_t Delay)
 cDistanceSensor *distPrt = 0;
 //cDistanceSensor *distPrt = 0;
 
+
 void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-	cOutput trig = cOutput(GPIOB, GPIO_PIN_0);
-	printf(GREEN("ps: %p mTrigger\n"), &trig);
+	cOutput *trig = new cOutput(GPIOB, GPIO_PIN_0);
+	printf(GREEN("ps: %p mTrigger\n"), trig);
 
-	cDistanceSensor dist = cDistanceSensor(&trig, 400, 2);
-	distPrt = &dist;
+	distPrt =  new cDistanceSensor(trig, 400, 2);
+
 	IcTimer.init();
-	IcTimer.initSensor(2, &dist);
+	IcTimer.initSensor(2, distPrt);
 
-	printf("p: dist\t\t: 0x%p\n", &dist);
-	printf("p: disttrggrr1\t: 0x%p\n", dist.getTrigger());
-	printf("p: disttrggrr2\t: 0x%p\n", distPrt->getTrigger());
 	printf("hi\n");
 
 //	dist.pulse();
@@ -132,7 +130,7 @@ void MX_FREERTOS_Init(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 16);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 256);
 	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
