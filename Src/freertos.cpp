@@ -92,21 +92,23 @@ void HAL_Delay(__IO uint32_t Delay)
 #include "distance_sensor.h"
 #include "ic_timer.h"
 
-cDistanceSensor *distPrt = 0;
-//cDistanceSensor *distPrt = 0;
+cDistanceSensor *distPtr = 0;
+cOutput *trig= 0;
 
 
 void MX_FREERTOS_Init(void)
 {
 	/* USER CODE BEGIN Init */
 
-	cOutput *trig = new cOutput(GPIOB, GPIO_PIN_0);
-	printf(GREEN("ps: %p mTrigger\n"), trig);
+	trig = new cOutput(GPIOB, GPIO_PIN_0);
+	printf(RED("p: %p trig\n"), trig);
 
-	distPrt =  new cDistanceSensor(trig, 400, 2);
+	distPtr =  new cDistanceSensor(400, 2);
+	distPtr->setTrigger(trig);
+	printf(RED("p: %p distPtr\n"), distPtr);
 
 	IcTimer.init();
-	IcTimer.initSensor(2, distPrt);
+	IcTimer.initSensor(2, distPtr);
 
 	printf("hi\n");
 
@@ -130,7 +132,7 @@ void MX_FREERTOS_Init(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 16);
+	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 	osThreadDef(samplerTask, StartSamplerTask, osPriorityNormal, 0, 256);
 	samplerTaskHandle = osThreadCreate(osThread(samplerTask), NULL);
@@ -168,24 +170,24 @@ void StartSamplerTask(void const * argument)
 	/* Infinite loop */
 	for (;;)
 	{
-		printf("p: distptr\t: 0x%p\n", distPrt);
-		printf("p: disttrigger\t: 0x%p\n", distPrt->getTrigger());
 		osDelay(1000);
+		printf(YELLOW("p: %p distPtr\n"), distPtr);
+		printf(YELLOW("p: %p trig\n"), trig);
 //		printf("osTick: %d\n", (int)osKernelSysTick());
 
 //		if(!distPrt)
 //			return;
 //
-//		distPrt->run();
+		distPtr->run();
+//
+		uint16_t tmp = distPtr->getLastSample();
+//
+//
+		if (tmp)
+			printf("dist: %d\n", tmp);
+////		distance_run();
 
-//		uint16_t tmp = distPrt->getLastSample();
-
-
-//		if (tmp)
-//			printf("dist: %d\n", tmp);
-//		distance_run();
-
-		int sample = 0;
+//		int sample = 0;
 //		if (distance_getLastSample(&sample))
 //			car_check_Run(sample);
 	}

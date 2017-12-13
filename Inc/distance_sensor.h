@@ -10,17 +10,18 @@
 
 #include "output.h"
 
-#define DISTANCE_ECHO_TIMEOUT		2000		//startup time
+#define DISTANCE_ECHO_TIMEOUT		200		//startup time
 #define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
 #define DISTANCE_MAX				400*58		//450cm * multiplier
 #define DISTANCE_TIMEOUT			100			//ms
 
 class cDistanceSensor
 {
-	cOutput *mTrigger;
 	uint32_t mTickStart;
 	uint32_t mTickEnd;
 	uint16_t mMaxDistance;
+
+	cOutput *mTrigger;
 
 	uint16_t mLastSample;
 	bool mDataAvailable;
@@ -38,14 +39,12 @@ class cDistanceSensor
 	uint32_t mIcChannel;
 
 public:
-	cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t sensorNumber);
+	cDistanceSensor(uint32_t maxDistance, uint8_t sensorNumber);
 	virtual ~cDistanceSensor();
 
+	void setTrigger(cOutput *trigger);
 	void pulse();
-	cOutput *getTrigger()
-	{
-		return mTrigger;
-	}
+	cOutput *getTrigger();
 
 
 	void setStart(uint32_t start);

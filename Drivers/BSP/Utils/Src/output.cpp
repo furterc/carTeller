@@ -11,7 +11,7 @@ cOutput::cOutput(GPIO_TypeDef *port, uint32_t pin)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Pin = pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
 	HAL_GPIO_Init(port, &GPIO_InitStruct);
@@ -20,7 +20,8 @@ cOutput::cOutput(GPIO_TypeDef *port, uint32_t pin)
 	mPin = pin;
 }
 
-cOutput::~cOutput() {
+cOutput::~cOutput()
+{
 	HAL_GPIO_DeInit(mPort, mPin);
 }
 
@@ -36,7 +37,7 @@ void cOutput::reset()
 
 bool cOutput::get()
 {
-	if(HAL_GPIO_ReadPin(mPort, mPin) == GPIO_PIN_SET)
+	if (HAL_GPIO_ReadPin(mPort, mPin) == GPIO_PIN_SET)
 		return true;
 
 	return false;

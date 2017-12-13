@@ -110,9 +110,7 @@ void cIcTimer::initSensor(uint8_t sensorNumber, cDistanceSensor *sensor)
 	printf("6\n");
 	HAL_TIM_Base_Start(&htim2);
 	printf("7\n");
-	printf("kak\n");
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-	printf("kak\n");
 	printf("8\n");
 }
 

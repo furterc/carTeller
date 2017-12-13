@@ -11,13 +11,13 @@
 #include "cmsis_os.h"
 
 
-cDistanceSensor::cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t sensorNumber)
+cDistanceSensor::cDistanceSensor(uint32_t maxDistance, uint8_t sensorNumber)
 {
-	mTrigger = trigger;
-	printf(GREEN("ps: %p dist\n"), trigger);
-	mTrigger->reset();
+	mTrigger = 0;
 
-	printf(GREEN("ps: %p dist\n"), trigger);
+	printf(GREEN("s: %p distanceTrig\n"), mTrigger);
+
+
 
 	mMaxDistance = maxDistance;
 	mTickStart = 0;
@@ -48,9 +48,17 @@ cDistanceSensor::cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t
 	}
 }
 
+
 cDistanceSensor::~cDistanceSensor()
 {
 
+}
+
+void cDistanceSensor::setTrigger(cOutput *trigger)
+{
+	mTrigger = trigger;
+	mTrigger->reset();
+	printf(RED("p: %p distPtr\n"), mTrigger);
 }
 
 void cDistanceSensor::pulse()
@@ -91,6 +99,7 @@ uint32_t cDistanceSensor::getIcChannel()
 
 void cDistanceSensor::run()
 {
+	printf(GREEN("s: %p distanceTrig\n"), mTrigger);
 	switch (state)
 	{
 	case DISTANCE_TRIG:
@@ -114,7 +123,7 @@ void cDistanceSensor::run()
 		if (cnt == 0)
 		{
 //			if (distanceDebug == 1)
-				printf(YELLOW("echo timeout\n"));
+			printf(YELLOW("echo timeout\n"));
 			state = DISTANCE_TRIG;
 			return;
 		}
@@ -127,33 +136,33 @@ void cDistanceSensor::run()
 		static uint8_t sampleCount = 0;
 		static uint32_t samples = 0;
 
-//		printf("mTickEnd: %0x%04X\n", mTickEnd);
-//		printf("mTickStart: %0x%04X\n", mTickStart);
+		printf("mTickEnd: %0x%04X\n", mTickEnd);
+		printf("mTickStart: %0x%04X\n", mTickStart);
 		uint32_t distance = mTickEnd - mTickStart;
 //		printf("Distance: %0x%04X\n", distance);
 
-		if ((distance & 0xFFFF0000) == 0xFFFF0000)
-			distance &= ~(0xFFFF0000);
-
-		distance /= 58;
-
-		if (distance > 400)
-			distance = 400;
-
-		samples += distance;
-		sampleCount++;
-		mDataAvailable = false;
-
+//		if ((distance & 0xFFFF0000) == 0xFFFF0000)
+//			distance &= ~(0xFFFF0000);
+//
+//		distance /= 58;
+//
+//		if (distance > 400)
+//			distance = 400;
+//
+//		samples += distance;
+//		sampleCount++;
+//		mDataAvailable = false;
+//
 		state = DISTANCE_WAIT;
-
-		if (sampleCount == 16)
-		{
-			mLastSample = samples >> 4;
-//		if (distanceDebug)
-//			printf(GREEN("SampleAverage\t: %d\n"), lastSample);
-			samples = 0;
-			sampleCount = 0;
-		}
+//
+//		if (sampleCount == 16)
+//		{
+//			mLastSample = samples >> 4;
+////		if (distanceDebug)
+////			printf(GREEN("SampleAverage\t: %d\n"), lastSample);
+//			samples = 0;
+//			sampleCount = 0;
+//		}
 	}
 		break;
 	case DISTANCE_WAIT:
@@ -176,5 +185,10 @@ uint16_t cDistanceSensor::getLastSample()
 	mLastSample = 0;
 
 	return temp;
+}
+
+cOutput *cDistanceSensor::getTrigger()
+{
+	return mTrigger;
 }
 
