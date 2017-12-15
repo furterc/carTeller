@@ -76,6 +76,7 @@ int main(void)
     /* Configure the system clock */
     SystemClock_Config();
 
+
     /* Initialize the terminal */
     terminal_init();
     printf(GREEN("terminal ready\n"));
@@ -96,8 +97,8 @@ int main(void)
 
 
 
-    MX_FREERTOS_Init();
 
+    MX_FREERTOS_Init();
     osKernelStart();
 
     /* Infinite loop */

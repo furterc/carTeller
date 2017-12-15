@@ -15,7 +15,7 @@ cDistanceSensor::cDistanceSensor(uint32_t maxDistance, uint8_t sensorNumber)
 {
 	mTrigger = 0;
 
-	printf(GREEN("s: %p distanceTrig\n"), mTrigger);
+//	printf(GREEN("s: %p distanceTrig\n"), mTrigger);
 
 
 
@@ -58,7 +58,6 @@ void cDistanceSensor::setTrigger(cOutput *trigger)
 {
 	mTrigger = trigger;
 	mTrigger->reset();
-	printf(RED("p: %p distPtr\n"), mTrigger);
 }
 
 void cDistanceSensor::pulse()
@@ -66,8 +65,9 @@ void cDistanceSensor::pulse()
 
 	CLEAR_BIT(TIM2->CCER, TIM_CCER_CC2P);
 //	IcTimer.startTimIC();
-	printf(GREEN("ps: %p pulse\n"), mTrigger);
+//	printf(GREEN("ps: %p pulse\n"), mTrigger);
 
+	printf("%s->%p\n", __FUNCTION__, this);
 	mTrigger->set();
 	printf(GREEN("s\n"));
 	osDelay(1);
@@ -99,12 +99,13 @@ uint32_t cDistanceSensor::getIcChannel()
 
 void cDistanceSensor::run()
 {
-	printf(GREEN("s: %p distanceTrig\n"), mTrigger);
+
+	//printf(GREEN("s: %08X distanceTrig\n"), *mTrigger);
 	switch (state)
 	{
 	case DISTANCE_TRIG:
 	{
-		printf(YELLOW("pulse\n"));
+		printf("%s->%p\n", __FUNCTION__, this);
 		pulse();
 		state = DISTANCE_WAIT_ECHO;
 	}
