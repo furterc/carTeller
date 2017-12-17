@@ -82,12 +82,12 @@ void USART2_IRQHandler(void)
     }
 }
 
-void TIM2_IRQHandler(void)
-{
-	printf("t2issr\n");
-//	distance_timerIrq();
-
-}
+//void TIM2_IRQHandler(void)
+//{
+//	printf("t2issr\n");
+////	distance_timerIrq();
+//
+//}
 
 
 /******************************************************************************/

@@ -51,6 +51,10 @@
 #include "distance_sensor.h"
 #include "ic_timer.h"
 #include "output.h"
+//#include "distance.h"
+
+#include "timer_ic.h"
+#include "ultra_s_sensor.h"
 
 //#include "spitry.h"
 
@@ -70,9 +74,6 @@ cSPI spi1 = cSPI();
 cDistanceSensor *distPtr = 0;
 
 
-
-//#define printBuffer(_c, _v)	printf(#_c " : " #_v " : %08X\n", READ_REG(#_c))
-
 int main(void)
 {
     /* MCU Configuration----------------------------------------------------------*/
@@ -91,7 +92,7 @@ int main(void)
     MX_GPIO_Init();
 
 
-    distance_Init();
+//    distance_Init();
     rtc_init();
 
     printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
@@ -103,20 +104,24 @@ int main(void)
 
 
 
+    cTimerIc *timer = &TimerIc;
+    cUltraSSensor sense = cUltraSSensor();
+    cOutput trigger = cOutput(GPIOB, GPIO_PIN_0);
+    sense.init(timer, &trigger);
 
-    cOutput chanOneTrig = cOutput(GPIOB, GPIO_PIN_0);
+//    cOutput chanOneTrig = cOutput(GPIOB, GPIO_PIN_0);
+//
+//    cDistanceSensor chanOneDist = cDistanceSensor(&chanOneTrig, 400, 2);
+//    distPtr = &chanOneDist;
 
-    cDistanceSensor chanOneDist = cDistanceSensor(&chanOneTrig, 400, 2);
-    distPtr = &chanOneDist;
-
-    cIcTimer timer = cIcTimer();
-    timer.init();
-    timer.initSensor(2, &chanOneDist);
-
-    printBuff(TIM2->CR1);
-    printBuff(TIM2->CR2);
-    printBuff(TIM2->EGR);
-    printBuff(TIM2->CCMR1);
+//    cIcTimer timer = cIcTimer();
+//    timer.init();
+//    timer.initSensor(2, &chanOneDist);
+//
+//    printBuff(TIM2->CR1);
+//    printBuff(TIM2->CR2);
+//    printBuff(TIM2->EGR);
+//    printBuff(TIM2->CCMR1);
 
     printf("hi daar!\n");
     /* Infinite loop */
@@ -124,13 +129,17 @@ int main(void)
     {
     	terminal_run();
 
+    	sense.run();
 
-    	chanOneDist.run();
+//    	distance_run();
+
+//    	chanOneDist.run();
 //
-//    	uint16_t sample = chanOneDist.getLastSample();
-//
-//    	if(sample)
-//    		printf("sample: %d\n", sample);
+//    	int s = 0;
+//    	distance_getLastSample(&s);
+////
+//    	if(s)
+//    		printf("sample: %d\n", s);
 
     }
 }

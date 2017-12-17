@@ -106,10 +106,11 @@ void cIcTimer::startTimIC()
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
 
+	SET_BIT(TIM2->CCER, TIM_CCER_CC2E);
 	printBuff(TIM2->CR1);
 	printBuff(TIM2->CR2);
 	printBuff(TIM2->CNT);
-	printBuff(TIM2->CCMR1);
+	printBuff(TIM2->CCER);
 }
 
 void cIcTimer::timerIrq()
