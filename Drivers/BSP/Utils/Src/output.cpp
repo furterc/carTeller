@@ -27,13 +27,11 @@ cOutput::~cOutput()
 
 void cOutput::set()
 {
-	printf("set %p\n", this);
 	HAL_GPIO_WritePin(mPort, mPin, GPIO_PIN_SET);
 }
 
 void cOutput::reset()
 {
-	printf("reset %p\n", this);
 	HAL_GPIO_WritePin(mPort, mPin, GPIO_PIN_RESET);
 }
 

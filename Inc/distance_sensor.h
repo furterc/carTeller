@@ -25,6 +25,7 @@ class cDistanceSensor
 
 	uint16_t mLastSample;
 	bool mDataAvailable;
+	uint8_t mDebug;
 
 	typedef enum
 	{
@@ -39,13 +40,13 @@ class cDistanceSensor
 	uint32_t mIcChannel;
 
 public:
-	cDistanceSensor(uint32_t maxDistance, uint8_t sensorNumber);
+	cDistanceSensor(cOutput *trigger, uint32_t maxDistance, uint8_t sensorNumber);
 	virtual ~cDistanceSensor();
 
-	void setTrigger(cOutput *trigger);
 	void pulse();
 	cOutput *getTrigger();
 
+	void setDebug(uint8_t lvl);
 
 	void setStart(uint32_t start);
 	void setEnd(uint32_t end);

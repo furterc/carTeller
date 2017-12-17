@@ -6,7 +6,6 @@
 #include "stm32l0xx.h"
 /* --------------------------- USART HW definition -------------------------------*/
 
-
  #define TERM_USART                         USART2
  #define TERM_USART_CLK_ENABLE()            __USART2_CLK_ENABLE();
  #define TERM_USART_RX_GPIO_CLK_ENABLE()    __GPIOA_CLK_ENABLE()
@@ -46,6 +45,8 @@
 #define BLUE_B(__x)        COLOR_BOLD(4, __x )
 #define MAGENTA_B(__x)    COLOR_BOLD(5, __x )
 #define CYAN_B(__x)        COLOR_BOLD(6, __x )
+
+#define printBuff(_c)	printf(#_c " : 0x%08X\n", (unsigned int)READ_REG(_c))
 
 #ifdef __cplusplus
  extern "C" {

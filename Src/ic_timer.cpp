@@ -8,7 +8,7 @@
 #include "ic_timer.h"
 #include "terminal.h"
 #include "stm32l0xx.h"
-#include "stm32l0xx_hal.h"
+#include "stm32l0xx_hal_conf.h"
 
 cIcTimer::cIcTimer()
 {
@@ -38,8 +38,6 @@ void cIcTimer::init()
 		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	HAL_TIM_Base_Start(&htim2);
-
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
 	if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
 	{
@@ -58,46 +56,36 @@ void cIcTimer::init()
 		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
-	HAL_NVIC_EnableIRQ(TIM2_IRQn);
-
 //	state = DISTANCE_UNKNOWN;
 //	printf(CYAN("Distance initialized\n"));
 }
 
 void cIcTimer::initSensor(uint8_t sensorNumber, cDistanceSensor *sensor)
 {
-	printf("1\n");
-	if ((sensorNumber == 0) || (sensorNumber > 4))
-		return;
+//	if ((sensorNumber == 0) || (sensorNumber > 4))
+//		return;
+//
+//	sensorNumber--;
+//
+////	if (mSensors[sensorNumber] == 0)
+//		mSensors[sensorNumber] = sensor;
+//
+//
+//	uint32_t icConfig = 0;
+//
+//	for (uint8_t idx = 0; idx < 4; idx++)
+//	{
+//		printf("idx: %d\n", idx);
+//		if (mSensors[idx])
+//		{
+//			printf("p: msens\t\t: 0x%p\n", mSensors[idx]);
+////			printf("p: msen\t\t: 0x%p\n", mSensor2);
+//			printf("ja: %d\n", idx);
+//			icConfig |= mSensors[idx]->getIcChannel();
+//		}
+//
+//	}
 
-	printf("2\n");
-	sensorNumber--;
-
-	printf("snsNr: %d\n", sensorNumber);
-	printf("3\n");
-//	if (mSensors[sensorNumber] == 0)
-		mSensors[sensorNumber] = sensor;
-
-
-
-	printf("4\n");
-	uint32_t icConfig = 0;
-
-	for (uint8_t idx = 0; idx < 4; idx++)
-	{
-		printf("idx: %d\n", idx);
-		if (mSensors[idx])
-		{
-			printf("p: msens\t\t: 0x%p\n", mSensors[idx]);
-//			printf("p: msen\t\t: 0x%p\n", mSensor2);
-			printf("ja: %d\n", idx);
-			icConfig |= mSensors[idx]->getIcChannel();
-		}
-
-	}
-
-	printf("5\n");
 	TIM_IC_InitTypeDef sConfigIC;
 	sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
 	sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
@@ -107,20 +95,26 @@ void cIcTimer::initSensor(uint8_t sensorNumber, cDistanceSensor *sensor)
 	{
 		_Error_Handler(__FILE__, __LINE__);
 	}
-	printf("6\n");
-	HAL_TIM_Base_Start(&htim2);
-	printf("7\n");
-	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
-	printf("8\n");
+
+	HAL_NVIC_SetPriority(TIM2_IRQn, 0x1, 0);
+	HAL_NVIC_EnableIRQ(TIM2_IRQn);
 }
 
 void cIcTimer::startTimIC()
 {
+	HAL_TIM_Base_Start(&htim2);
+	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
+
+	printBuff(TIM2->CR1);
+	printBuff(TIM2->CR2);
+	printBuff(TIM2->CNT);
+	printBuff(TIM2->CCMR1);
 }
 
 void cIcTimer::timerIrq()
 {
+	printf("iter2\n");
 	if (READ_BIT(TIM2->SR, TIM_SR_CC2IF))
 	{
 //		if(mSensor2 == 0)
@@ -137,14 +131,13 @@ void cIcTimer::timerIrq()
 		mSensors[1]->setStart(TIM2->CCR2);
 
 	}
-
 }
-extern "C" {
-void TIM2_IRQHandler(void)
-{
-		IcTimer.timerIrq();
-	//	distance_timerIrq();
-}
-}
+//extern "C" {
+//void TIM2_IRQHandler(void)
+//{
+//		IcTimer.timerIrq();
+//	//	distance_timerIrq();
+//}
+//}
 cIcTimer IcTimer = cIcTimer();
 

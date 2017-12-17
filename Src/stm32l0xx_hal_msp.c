@@ -117,6 +117,8 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
   if(htim_base->Instance==TIM2)
   {
+	  printf("%s\n", __FUNCTION__);
+
 		__HAL_RCC_TIM2_CLK_ENABLE();
 
 		/**TIM2 GPIO Configuration

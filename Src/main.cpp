@@ -39,8 +39,6 @@
 #include "main.h"
 #include "stm32l0xx_hal.h"
 #include "stm32l0xx_hal_conf.h"
-#include "cmsis_os.h"
-#include "FreeRTOSConfig.h"
 #include "terminal.h"
 #include "rtc.h"
 #include "commands.h"
@@ -50,6 +48,9 @@
 #include "carCheck.h"
 #include "spi.h"
 #include "car_wash.h"
+#include "distance_sensor.h"
+#include "ic_timer.h"
+#include "output.h"
 
 //#include "spitry.h"
 
@@ -66,6 +67,12 @@ RTC_HandleTypeDef hrtc;
 cSPI spi1 = cSPI();
 
 
+cDistanceSensor *distPtr = 0;
+
+
+
+//#define printBuffer(_c, _v)	printf(#_c " : " #_v " : %08X\n", READ_REG(#_c))
+
 int main(void)
 {
     /* MCU Configuration----------------------------------------------------------*/
@@ -75,7 +82,6 @@ int main(void)
 
     /* Configure the system clock */
     SystemClock_Config();
-
 
     /* Initialize the terminal */
     terminal_init();
@@ -98,14 +104,58 @@ int main(void)
 
 
 
-    MX_FREERTOS_Init();
-    osKernelStart();
+    cOutput chanOneTrig = cOutput(GPIOB, GPIO_PIN_0);
 
+    cDistanceSensor chanOneDist = cDistanceSensor(&chanOneTrig, 400, 2);
+    distPtr = &chanOneDist;
+
+    cIcTimer timer = cIcTimer();
+    timer.init();
+    timer.initSensor(2, &chanOneDist);
+
+    printBuff(TIM2->CR1);
+    printBuff(TIM2->CR2);
+    printBuff(TIM2->EGR);
+    printBuff(TIM2->CCMR1);
+
+    printf("hi daar!\n");
     /* Infinite loop */
     while (1)
     {
+    	terminal_run();
+
+
+    	chanOneDist.run();
+//
+//    	uint16_t sample = chanOneDist.getLastSample();
+//
+//    	if(sample)
+//    		printf("sample: %d\n", sample);
+
     }
 }
+
+void distance_debug(uint8_t argc, char **argv)
+{
+	if (argc != 2)
+	{
+		printf("n - debug lvl enabled \n\r0 - debug disabled\n");
+		return;
+	}
+
+	uint8_t lvl = atoi(argv[1]);
+
+	if (lvl > 3)
+		lvl = 3;
+
+	if (lvl < 0)
+		lvl = 0;
+
+	distPtr->setDebug(lvl);
+}
+
+sTermEntry_t ddebugEntry =
+{ "dd", "distanceDebug", distance_debug };
 
 void spiTry(uint8_t argc, char **argv)
 {

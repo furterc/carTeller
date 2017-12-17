@@ -8,6 +8,7 @@
 
 #define CMD_BUFFER_SIZE     128
 
+
 bool terminal_validFrame = false;
 bool terminal_active = false;
 

@@ -36,8 +36,6 @@
 #include "stm32l0xx_it.h"
 #include "terminal.h"
 #include "distance.h"
-#include "cmsis_os.h"
-
 
 /* External variables --------------------------------------------------------*/
 
@@ -51,7 +49,8 @@ extern TIM_HandleTypeDef htim6;
 */
 void SysTick_Handler(void)
 {
-	 osSystickHandler();
+	HAL_IncTick();
+	HAL_SYSTICK_IRQHandler();
 }
 
 
@@ -83,22 +82,13 @@ void USART2_IRQHandler(void)
     }
 }
 
-//void TIM2_IRQHandler(void)
-//{
-//	distance_timerIrq();
-//
-//}
-
-void TIM6_DAC_IRQHandler(void)
+void TIM2_IRQHandler(void)
 {
-  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+	printf("t2issr\n");
+//	distance_timerIrq();
 
-  /* USER CODE END TIM6_DAC_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim6);
-  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
-
-  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
+
 
 /******************************************************************************/
 /* STM32L0xx Peripheral Interrupt Handlers                                    */

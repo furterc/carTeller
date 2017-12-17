@@ -24,10 +24,6 @@ BUILD_DIR = build
 C_SOURCES =  \
 $(wildcard Drivers/STM32L0xx_HAL_Driver/Src/*.c) \
 $(wildcard Drivers/BSP/Utils/Src/*.c) \
-$(wildcard Middlewares/Third_Party/FreeRTOS/Source/*.c) \
-Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
-Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
-Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c \
 $(wildcard Src/*.c)
 
 # C++ sources
@@ -51,7 +47,4 @@ C_INCLUDES =  \
 -IDrivers/BSP/Utils/Inc \
 -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32L0xx/Include \
--IDrivers/CMSIS/Include \
--IMiddlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM0 \
--IMiddlewares/Third_Party/FreeRTOS/Source/include \
--IMiddlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
+-IDrivers/CMSIS/Include

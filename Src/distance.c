@@ -9,7 +9,6 @@
 #include "distance.h"
 #include "stm32l0xx_hal.h"
 #include "terminal.h"
-#include "cmsis_os.h"
 
 #define DISTANCE_ECHO_TIMEOUT		2000		//startup time
 #define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
@@ -127,7 +126,7 @@ void distance_pulse()
 
 	// pulse the trig pin
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_SET);
-	osDelay(1);
+	HAL_Delay(1);
 	HAL_GPIO_WritePin(P1_GPIO_Port, P1_Pin, GPIO_PIN_RESET);
 }
 
@@ -180,22 +179,27 @@ void distance_run()
 		break;
 	case DISTANCE_WAIT_ECHO:
 	{
-		uint8_t cnt = DISTANCE_ECHO_TIMEOUT / 10;
-		while (!dataAvailable && cnt)
-		{
-			osDelay(10);
-			cnt--;
-		}
+		static uint32_t tickstart = 0U;
 
-		if (cnt == 0)
+		if(dataAvailable)
 		{
-			if (distanceDebug == 1)
-				printf(YELLOW("echo timeout\n"));
-			state = DISTANCE_TRIG;
+			tickstart = 0;
+			state = DISTANCE_RECEIVE_SAMPLE;
 			return;
 		}
 
-		state = DISTANCE_RECEIVE_SAMPLE;
+		if (tickstart == 0)
+			tickstart = HAL_GetTick();
+
+		if((HAL_GetTick() - tickstart) > DISTANCE_ECHO_TIMEOUT)
+		{
+			if(distanceDebug)
+				printf(YELLOW("echo timeout\n"));
+
+			tickstart = 0;
+			state = DISTANCE_TRIG;
+
+		}
 	}
 		break;
 	case DISTANCE_RECEIVE_SAMPLE:
@@ -203,7 +207,7 @@ void distance_run()
 		static uint8_t sampleCount = 0;
 		static uint32_t samples = 0;
 
-		uint32_t distance = atime[1] - atime[0];
+		int distance = atime[1] - atime[0];
 
 		if ((distance & 0xFFFF0000) == 0xFFFF0000)
 		{
@@ -220,10 +224,8 @@ void distance_run()
 		distance /= 58;
 
 		if (distance > 400)
-		{
-//				printf("fkp\n");
 			distance = 400;
-		}
+
 
 		samples += distance;
 		sampleCount++;
@@ -246,7 +248,7 @@ void distance_run()
 		break;
 	case DISTANCE_WAIT:
 	{
-		osDelay(DISTANCE_SAMPLE_DUTY);
+//		osDelay(DISTANCE_SAMPLE_DUTY);
 		state = DISTANCE_TRIG;
 	}
 		break;
@@ -265,24 +267,4 @@ uint8_t distance_getLastSample(int *sample)
 	return 1;
 }
 
-void distance_debug(uint8_t argc, char **argv)
-{
-	if (argc != 2)
-	{
-		printf("n - debug lvl enabled \n\r0 - debug disabled\n");
-		return;
-	}
 
-	uint8_t lvl = atoi(argv[1]);
-
-	if (lvl > 3)
-		lvl = 3;
-
-	if (lvl < 0)
-		lvl = 0;
-
-	distanceDebug = lvl;
-}
-
-sTermEntry_t ddebugEntry =
-{ "dd", "distanceDebug", distance_debug };
