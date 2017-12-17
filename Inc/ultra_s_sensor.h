@@ -34,6 +34,7 @@ class cUltraSSensor
 	distanceStates_t mState;
 	uint32_t mLastSample;
 
+
 	void pulse();
 
 public:
@@ -41,6 +42,7 @@ public:
 	virtual ~cUltraSSensor();
 
 	void init(cTimerIc *timer, cOutput *trigger);
+	void setDebug(uint8_t debug);
 	void run();
 };
 

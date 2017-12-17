@@ -35,7 +35,6 @@
 #include "stm32l0xx.h"
 #include "stm32l0xx_it.h"
 #include "terminal.h"
-#include "distance.h"
 
 /* External variables --------------------------------------------------------*/
 

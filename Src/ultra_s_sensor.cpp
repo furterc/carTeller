@@ -42,6 +42,11 @@ void cUltraSSensor::init(cTimerIc *timer, cOutput *trigger)
 	mTimer->init();
 }
 
+void cUltraSSensor::setDebug(uint8_t debug)
+{
+	mDebug = debug;
+}
+
 void cUltraSSensor::run()
 {
 	switch (mState)
@@ -109,7 +114,7 @@ void cUltraSSensor::run()
 		samples += distance;
 		sampleCount++;
 
-//		if (mDebug == 2)
+		if (mDebug == 2)
 			printf("sample: %d\t: %d\n", sampleCount, (unsigned int) distance);
 
 		mState = DISTANCE_WAIT;
@@ -117,7 +122,7 @@ void cUltraSSensor::run()
 		if (sampleCount == 16)
 		{
 			mLastSample = samples >> 4;
-//			if (mDebug)
+			if (mDebug)
 				printf(GREEN("SampleAverage\t: %d\n"), (unsigned int)mLastSample);
 			samples = 0;
 			sampleCount = 0;

@@ -39,7 +39,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx_hal.h"
 #include "terminal.h"
-#include "distance.h"
 
 //extern void _Error_Handler(char *, int);
 /**

@@ -9,7 +9,6 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include "distance.h"
 
 #include "terminal.h"
 

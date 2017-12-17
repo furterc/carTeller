@@ -43,13 +43,10 @@
 #include "rtc.h"
 #include "commands.h"
 #include <stdlib.h>
-#include "distance.h"
 #include "nvm.h"
 #include "carCheck.h"
 #include "spi.h"
 #include "car_wash.h"
-#include "distance_sensor.h"
-#include "ic_timer.h"
 #include "output.h"
 //#include "distance.h"
 
@@ -71,7 +68,7 @@ RTC_HandleTypeDef hrtc;
 cSPI spi1 = cSPI();
 
 
-cDistanceSensor *distPtr = 0;
+cUltraSSensor *distPtr = 0;
 
 
 int main(void)
@@ -106,6 +103,7 @@ int main(void)
 
     cTimerIc *timer = &TimerIc;
     cUltraSSensor sense = cUltraSSensor();
+    distPtr = &sense;
     cOutput trigger = cOutput(GPIOB, GPIO_PIN_0);
     sense.init(timer, &trigger);
 
