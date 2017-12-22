@@ -38,7 +38,6 @@
 
 /* External variables --------------------------------------------------------*/
 
-extern TIM_HandleTypeDef htim6;
 /******************************************************************************/
 /*            Cortex-M0+ Processor Interruption and Exception Handlers         */ 
 /******************************************************************************/
@@ -80,13 +79,6 @@ void USART2_IRQHandler(void)
         terminal_handleByte(c);
     }
 }
-
-//void TIM2_IRQHandler(void)
-//{
-//	printf("t2issr\n");
-////	distance_timerIrq();
-//
-//}
 
 
 /******************************************************************************/

@@ -43,104 +43,133 @@
 #include "rtc.h"
 #include "commands.h"
 #include <stdlib.h>
+#include <string.h>
 #include "nvm.h"
-#include "carCheck.h"
+#include "car_check.h"
 #include "spi.h"
 #include "car_wash.h"
-#include "output.h"
-//#include "distance.h"
 
+#include "output.h"
 #include "timer_ic.h"
 #include "ultra_s_sensor.h"
+#include "hw.h"
 
-//#include "spitry.h"
-
-/* Private variables ---------------------------------------------------------*/
-RTC_HandleTypeDef hrtc;
-
-/* Private variables ---------------------------------------------------------*/
-
-/* Private function prototypes -----------------------------------------------*/
-
-
-/* Private function prototypes -----------------------------------------------*/
-
+cHw HW = cHw();
 cSPI spi1 = cSPI();
 
 
-cUltraSSensor *distPtr = 0;
+cUltraSSensor *distanceSensor = 0;
 
+uint8_t triggerDistance;
+uint8_t triggerTime;
 
 int main(void)
 {
     /* MCU Configuration----------------------------------------------------------*/
-
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
 
     /* Configure the system clock */
-    SystemClock_Config();
+    HW.SystemClock_Config();
 
     /* Initialize the terminal */
     terminal_init();
-    printf(GREEN("terminal ready\n"));
 
     /* Initialize all configured peripherals */
-    MX_GPIO_Init();
+    HW.Gpio_Init();
 
-
-//    distance_Init();
     rtc_init();
 
-    printf(BLUE("SysFreq\t: %d\n"), (int)HAL_RCC_GetSysClockFreq());
-
+    printf("Flash size   : %d kB\n", HW.GetFlashSize());
+    printf("System Clock : %dHz\n\r", (int)HAL_RCC_GetSysClockFreq());
 
     spi1.init(SPI1, (uint32_t)10000000);
 
-    car_check_Init();
+	memcpy(&triggerDistance, nvm_get_CarDistance(),1);
+	memcpy(&triggerTime, nvm_get_CarTime(),1);
 
-
-
+    TimerIc.init();
     cTimerIc *timer = &TimerIc;
-    cUltraSSensor sense = cUltraSSensor();
-    distPtr = &sense;
-    cOutput trigger = cOutput(GPIOB, GPIO_PIN_0);
-    sense.init(timer, &trigger);
 
-//    cOutput chanOneTrig = cOutput(GPIOB, GPIO_PIN_0);
-//
-//    cDistanceSensor chanOneDist = cDistanceSensor(&chanOneTrig, 400, 2);
-//    distPtr = &chanOneDist;
+    cOutput *triggers[SENSOR_COUNT];
+    cUltraSSensor *sensors[2];
+    cCarCheck *carcheckers[2];
 
-//    cIcTimer timer = cIcTimer();
-//    timer.init();
-//    timer.initSensor(2, &chanOneDist);
-//
-//    printBuff(TIM2->CR1);
-//    printBuff(TIM2->CR2);
-//    printBuff(TIM2->EGR);
-//    printBuff(TIM2->CCMR1);
+    uint8_t i = 0;
 
-    printf("hi daar!\n");
+    triggers[i] = new cOutput(GPIOB, GPIO_PIN_0);
+    sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_2);
+    carcheckers[i] = new cCarCheck(triggerDistance, triggerTime, i);
+
+    i++;
+
+    triggers[i] = new cOutput(GPIOA, GPIO_PIN_10);
+    sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
+    carcheckers[1] = new cCarCheck(triggerDistance, triggerTime, i);
+
     /* Infinite loop */
     while (1)
     {
     	terminal_run();
 
-    	sense.run();
+    	static uint8_t idx = 0;
+    	bool timerRunning = distanceSensor->run();
 
-//    	distance_run();
+    	if (!timerRunning)
+    	{
+    		//select next sample count
+    		if(idx++ == 1)
+    			idx = 0;
 
-//    	chanOneDist.run();
-//
-//    	int s = 0;
-//    	distance_getLastSample(&s);
-////
-//    	if(s)
-//    		printf("sample: %d\n", s);
+    		distanceSensor = sensors[idx];
+    		distanceSensor->sample();
+    	}
 
+    	uint32_t s = distanceSensor->getLastSample();
+    	if(s)
+    	{
+    		carcheckers[idx]->run(s);
+    	}
     }
 }
+
+void carDistance(uint8_t argc, char **argv)
+{
+    if (argc == 1)
+    {
+    	printf("trigDistance: %dcm\n", triggerDistance);
+    }
+    else if (argc == 2)
+    {
+    	uint8_t data = atoi(argv[1]);
+    	if (nvm_set_CarDistance(&data) != 1)
+    		printf("'n fokken gemors\n");
+
+    	triggerDistance = data;
+    	printf("trigDistance: %dcm\n", triggerDistance);
+    }
+}
+sTermEntry_t carDistEntry =
+{ "cd", "Set/Get the car trigger distance", carDistance };
+
+void carTime(uint8_t argc, char **argv)
+{
+    if (argc == 1)
+    {
+    	printf("trigTime: %dcm\n", triggerDistance);
+    }
+    else if (argc == 2)
+    {
+    	uint8_t data = atoi(argv[1]);
+    	if (nvm_set_CarTime(&data) != 1)
+    		printf("'n fokken gemors\n");
+
+    	triggerTime = data;
+    	printf("trigTime: %dcm\n", triggerTime);
+    }
+}
+sTermEntry_t carTimeEntry =
+{ "ct", "Set/Get the car trigger time", carTime };
 
 void distance_debug(uint8_t argc, char **argv)
 {
@@ -158,7 +187,7 @@ void distance_debug(uint8_t argc, char **argv)
 	if (lvl < 0)
 		lvl = 0;
 
-	distPtr->setDebug(lvl);
+	distanceSensor->setDebug(lvl);
 }
 
 sTermEntry_t ddebugEntry =
@@ -170,10 +199,6 @@ void spiTry(uint8_t argc, char **argv)
 	spi1.readId(data, 3);
 
 	printf("spi id: 0x%02X 0x%02X 0x%02X\n", data[0], data[1], data[2]);
-
-
-
-//	printf("manid %0x%X\n", HW_SPI_InOut(0x9F));
 }
 
 sTermEntry_t spiEntry =
@@ -214,14 +239,6 @@ void EspiTry(uint8_t argc, char **argv)
 sTermEntry_t erasespiEntry =
 { "se", "spi erase", EspiTry};
 
-
-void pulse(uint8_t argc, char **argv)
-{
-//	distance_pulse();
-}
-
-sTermEntry_t pulseEntry =
-{ "p", "pulsit", pulse};
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
@@ -270,124 +287,9 @@ sTermEntry_t dateEntry =
 
 
 
-/** System Clock Configuration
- */
-void SystemClock_Config(void)
-{
-
-	  RCC_OscInitTypeDef RCC_OscInitStruct;
-	  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-	  RCC_PeriphCLKInitTypeDef PeriphClkInit;
-
-	    /**Configure the main internal regulator output voltage
-	    */
-	  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-	    /**Initializes the CPU, AHB and APB busses clocks
-	    */
-	  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
-	  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-	  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	  RCC_OscInitStruct.HSICalibrationValue = 16;
-	  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-	  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-	  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_4;
-	  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
-	  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-	  {
-	//    _Error_Handler(__FILE__, __LINE__);
-	  }
-
-	    /**Initializes the CPU, AHB and APB busses clocks
-	    */
-	  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-	                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-	  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-	  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-	  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-	  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-	  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-	  {
-	//    _Error_Handler(__FILE__, __LINE__);
-	  }
-
-	  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
-	  PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-	  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-	  {
-	//    _Error_Handler(__FILE__, __LINE__);
-	  }
-
-	    /**Configure the Systick interrupt time
-	    */
-	  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-
-	    /**Configure the Systick
-	    */
-	  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-	  /* SysTick_IRQn interrupt configuration */
-	  HAL_NVIC_SetPriority(SysTick_IRQn, 3, 0);
-}
-
-/** Configure pins as 
- * Analog
- * Input
- * Output
- * EVENT_OUT
- * EXTI
- */
-void MX_GPIO_Init(void)
-{
-
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOH_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
-    /*Configure GPIO pin : B1_Pin */
-    GPIO_InitStruct.Pin = B1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : LD2_Pin */
-    GPIO_InitStruct.Pin = LD2_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : P1_Pin */
-    GPIO_InitStruct.Pin = P1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(P1_GPIO_Port, &GPIO_InitStruct);
-
-}
-
-/**
- * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
- */
 void _Error_Handler(const char * file, int line)
 {
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
     printf(RED("Probleem: %s\t:%d\n"), file, line);
-    //    while (1)
-//    {
-//    }
-    /* USER CODE END Error_Handler_Debug */
 }
 
 /**

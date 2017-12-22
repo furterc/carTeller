@@ -59,8 +59,9 @@
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-
 /* USER CODE BEGIN Private defines */
+
+#define SENSOR_COUNT	3
 
 /* USER CODE END Private defines */
 
@@ -70,8 +71,6 @@
 
 
 
- void SystemClock_Config(void);
- void MX_GPIO_Init(void);
 
 void _Error_Handler(const char *, int);
 

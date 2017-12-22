@@ -13,6 +13,12 @@
 
 #include <stdbool.h>
 
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
+
 bool nvm_erase(uint32_t Address, uint8_t words);
 bool nvm_set(uint32_t Address, uint8_t *data, uint8_t words);
 
@@ -21,5 +27,9 @@ uint8_t *nvm_get_CarDistance();
 
 bool nvm_set_CarTime(uint8_t *distance);
 uint8_t *nvm_get_CarTime();
+
+#ifdef __cplusplus
+ }
+#endif
 
 #endif /* INC_NVM_H_ */

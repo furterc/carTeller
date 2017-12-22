@@ -9,7 +9,7 @@
 #define ULTRA_S_SENSOR_H_
 
 #define DISTANCE_ECHO_TIMEOUT		2000		//startup time
-#define DISTANCE_SAMPLE_DUTY		1000/16  	//16 samples a second
+#define DISTANCE_SAMPLE_DUTY		1000/64  	//16 samples a second
 #define DISTANCE_MAX				400*58		//450cm * multiplier
 #define DISTANCE_TIMEOUT			100			//ms
 
@@ -29,21 +29,23 @@ class cUltraSSensor
 
 	cTimerIc *mTimer;
 	cOutput *mTrigger;
+	uint32_t mChannel;
 	uint8_t mDebug;
+	bool mBusy;
 
 	distanceStates_t mState;
 	uint32_t mLastSample;
 
-
 	void pulse();
 
 public:
-	cUltraSSensor();
+	cUltraSSensor(cTimerIc *timer, cOutput *trigger, uint32_t channel);
 	virtual ~cUltraSSensor();
 
-	void init(cTimerIc *timer, cOutput *trigger);
+	void sample();
+	uint32_t getLastSample();
 	void setDebug(uint8_t debug);
-	void run();
+	bool run();
 };
 
 #endif /* ULTRA_S_SENSOR_H_ */

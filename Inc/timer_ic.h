@@ -9,6 +9,7 @@
 #define TIMER_IC_H_
 
 #include "stm32l0xx_hal.h"
+#include "stm32l0xx_hal_conf.h"
 
 class cTimerIc
 {
@@ -19,6 +20,7 @@ class cTimerIc
 	uint32_t mChannel;
 
 	bool mDataAvailable;
+	bool mBusy;
 
 public:
 	cTimerIc();

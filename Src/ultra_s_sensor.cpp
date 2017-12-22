@@ -13,33 +13,42 @@ void cUltraSSensor::pulse()
 	if (mTrigger == 0)
 		return;
 
-	mTimer->startSample(TIM_CHANNEL_2);
+	mTimer->startSample(mChannel);
 
 	mTrigger->set();
 	HAL_Delay(1);
 	mTrigger->reset();
 }
 
-cUltraSSensor::cUltraSSensor()
+cUltraSSensor::cUltraSSensor(cTimerIc *timer, cOutput *trigger, uint32_t channel)
 {
-	mTimer = 0;
-	mTrigger = 0;
-	mState = DISTANCE_UNKNOWN;
-
+	mTimer = timer;
+	mTrigger = trigger;
+	mChannel = channel;
 	mDebug = 0;
 	mLastSample = 0;
+	mState = DISTANCE_UNKNOWN;
+	mBusy = false;
 }
 
 cUltraSSensor::~cUltraSSensor()
 {
-	// TODO Auto-generated destructor stub
+
 }
 
-void cUltraSSensor::init(cTimerIc *timer, cOutput *trigger)
+void cUltraSSensor::sample()
 {
-	mTimer = timer;
-	mTrigger = trigger;
-	mTimer->init();
+	mBusy = true;
+}
+
+uint32_t cUltraSSensor::getLastSample()
+{
+	if (!mLastSample)
+		return 0;
+	uint32_t tmp = mLastSample;
+	mLastSample = 0;
+	mBusy = false;
+	return tmp;
 }
 
 void cUltraSSensor::setDebug(uint8_t debug)
@@ -47,8 +56,11 @@ void cUltraSSensor::setDebug(uint8_t debug)
 	mDebug = debug;
 }
 
-void cUltraSSensor::run()
+bool cUltraSSensor::run()
 {
+	if(!mBusy)
+		return 0;
+
 	switch (mState)
 	{
 	case DISTANCE_TRIG:
@@ -65,7 +77,7 @@ void cUltraSSensor::run()
 		{
 			tickstart = 0;
 			mState = DISTANCE_RECEIVE_SAMPLE;
-			return;
+			return true;
 		}
 
 		if (tickstart == 0)
@@ -100,8 +112,8 @@ void cUltraSSensor::run()
 
 		if (mDebug == 3)
 		{
-			printf("atime[0] : 0x%08X\n", (unsigned int) start);
-			printf("atime[1] : 0x%08X\n", (unsigned int) end);
+			printf("start : 0x%08X\n", (unsigned int) start);
+			printf("end   : 0x%08X\n", (unsigned int) end);
 			printf(GREEN("distance : 0x%08X\n"), (unsigned int) distance);
 		}
 
@@ -147,4 +159,5 @@ void cUltraSSensor::run()
 		mState = DISTANCE_WAIT_ECHO;
 	}
 
+	return mBusy;
 }
