@@ -48,6 +48,14 @@ void cCarWash::end(uint8_t hour, uint8_t minute, uint8_t second)
 	mCarWashObj.duration_second = durSecond;
 }
 
+void cCarWash::dbgPrint()
+{
+	printf(GREEN_B("Carwash bay: %d\n"), mCarWashObj.bayNumber);
+	printf("Date: %d/%d/20%02d\n", mCarWashObj.date_dayOfMonth, mCarWashObj.date_monthOfYear, mCarWashObj.date_year);
+	printf("Time: %02d:%02d\n", mCarWashObj.time_hour, mCarWashObj.time_minute);
+	printf("Duration: %02d:%02d\n", mCarWashObj.duration_minute, mCarWashObj.duration_second);
+}
+
 uint8_t cCarWash::getBytes(uint8_t *data)
 {
 	memcpy(data, &mCarWashObj, 8);

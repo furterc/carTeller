@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "terminal.h"
+
 class cCarWash
 {
 	typedef struct
@@ -34,6 +36,7 @@ public:
 
 	void start(uint8_t hour, uint8_t minute, uint8_t second);
 	void end(uint8_t hour, uint8_t minute, uint8_t second);
+	void dbgPrint();
 	uint8_t getBytes(uint8_t *data);
 };
 

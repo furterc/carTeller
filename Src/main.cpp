@@ -63,6 +63,10 @@ cUltraSSensor *distanceSensor = 0;
 uint8_t triggerDistance;
 uint8_t triggerTime;
 
+cOutput *triggers[SENSOR_COUNT];
+cUltraSSensor *sensors[SENSOR_COUNT];
+cCarCheck *carcheckers[SENSOR_COUNT];
+
 int main(void)
 {
     /* MCU Configuration----------------------------------------------------------*/
@@ -91,10 +95,6 @@ int main(void)
     TimerIc.init();
     cTimerIc *timer = &TimerIc;
 
-    cOutput *triggers[SENSOR_COUNT];
-    cUltraSSensor *sensors[2];
-    cCarCheck *carcheckers[2];
-
     uint8_t i = 0;
 
     triggers[i] = new cOutput(GPIOB, GPIO_PIN_0);
@@ -107,12 +107,12 @@ int main(void)
     sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
     carcheckers[1] = new cCarCheck(triggerDistance, triggerTime, i);
 
+	uint8_t idx = 0;
     /* Infinite loop */
     while (1)
     {
     	terminal_run();
 
-    	static uint8_t idx = 0;
     	bool timerRunning = distanceSensor->run();
 
     	if (!timerRunning)
@@ -156,7 +156,7 @@ void carTime(uint8_t argc, char **argv)
 {
     if (argc == 1)
     {
-    	printf("trigTime: %dcm\n", triggerDistance);
+    	printf("trigTime: %d\n", triggerTime);
     }
     else if (argc == 2)
     {
@@ -173,13 +173,32 @@ sTermEntry_t carTimeEntry =
 
 void distance_debug(uint8_t argc, char **argv)
 {
-	if (argc != 2)
+	if (argc == 2)
+	{
+		uint8_t disable = atoi(argv[1]);
+		if(!disable)
+		{
+			for(uint8_t idx = 0; idx < SENSOR_COUNT; idx++)
+				sensors[idx]->setDebug(0);
+			printf(CYAN("disabled debug\n"));
+			return;
+		}
+	}
+
+	if (argc != 3)
 	{
 		printf("n - debug lvl enabled \n\r0 - debug disabled\n");
 		return;
 	}
 
-	uint8_t lvl = atoi(argv[1]);
+	uint8_t channel = atoi(argv[1]);
+	uint8_t lvl = atoi(argv[2]);
+
+	if (channel > SENSOR_COUNT)
+	{
+		printf(RED("unknown channel\n"));
+		return;
+	}
 
 	if (lvl > 3)
 		lvl = 3;
@@ -187,7 +206,8 @@ void distance_debug(uint8_t argc, char **argv)
 	if (lvl < 0)
 		lvl = 0;
 
-	distanceSensor->setDebug(lvl);
+	sensors[channel]->setDebug(lvl);
+	printf("set chan %d to dbg level %d\n", channel, lvl);
 }
 
 sTermEntry_t ddebugEntry =

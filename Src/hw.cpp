@@ -112,5 +112,4 @@ void cHw::Gpio_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
-
 }

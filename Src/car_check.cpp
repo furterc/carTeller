@@ -59,8 +59,9 @@ uint8_t cCarCheck::run(uint32_t distance)
 
 			mCarWash->start(mStartTime.Hours, mStartTime.Minutes, mStartTime.Seconds);
 
-			printf(GREEN("Carwash started@%02d:%02d:%02d\n"), mStartTime.Hours,
+			printf(GREEN("Car in bay: %d @ %02d:%02d:%02d\n"), mBayNumber, mStartTime.Hours,
 					mStartTime.Minutes, mStartTime.Seconds);
+			mCarCount = 0;
 			carState = CARCHECK_STATE_INPROGRESS;
 		}
 	}
@@ -69,22 +70,26 @@ uint8_t cCarCheck::run(uint32_t distance)
 	case CARCHECK_STATE_INPROGRESS:
 		if (distance > mTriggerDistance)
 		{
-			carState = CARCHECK_STATE_END;
+			mCarCount++;
+			if(mCarCount > mTriggerTime)
+			{
+				mCarCount = 0;
+				carState = CARCHECK_STATE_END;
+				return 0;
+			}
 			return 0;
 		}
+		mCarCount = 0;
 		break;
 		/* car got away */
 	case CARCHECK_STATE_END:
 	{
 		RTC_TimeTypeDef endTime;
 		rtc_getTime (&endTime);
-		mCarWash->end(mStartTime.Hours, mStartTime.Minutes, mStartTime.Seconds);
+		mCarWash->end(endTime.Hours, endTime.Minutes, endTime.Seconds);
 
-		printf(CYAN_B("Carwash stats\n"));
-		printf(CYAN("Start:\t%02d:%02d:%02d\n"), mStartTime.Hours,
-				mStartTime.Minutes, mStartTime.Seconds);
-		printf(CYAN("End:\t%02d:%02d:%02d\n"), endTime.Hours, endTime.Minutes,
-				endTime.Seconds);
+		//print the carwash out
+		mCarWash->dbgPrint();
 
 		carState = CARCHECK_STATE_IDLE;
 		return 1;
