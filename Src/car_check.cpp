@@ -45,6 +45,12 @@ uint8_t cCarCheck::run(uint32_t distance)
 		if (distance > mTriggerDistance)
 		{
 			carState = CARCHECK_STATE_IDLE;
+
+			if(mCarWash)
+			{
+				delete(mCarWash);
+				mCarWash = 0;
+			}
 			return 0;
 		}
 
@@ -55,7 +61,10 @@ uint8_t cCarCheck::run(uint32_t distance)
 		{
 			RTC_DateTypeDef startDate;
 			rtc_getDate(&startDate);
-			mCarWash = new cCarWash(mBayNumber, startDate.Date, startDate.Month, startDate.Year);
+
+			//if there is not a carwash obj, make one
+			if(!mCarWash)
+				mCarWash = new cCarWash(mBayNumber, startDate.Date, startDate.Month, startDate.Year);
 
 			mCarWash->start(mStartTime.Hours, mStartTime.Minutes, mStartTime.Seconds);
 
@@ -88,12 +97,8 @@ uint8_t cCarCheck::run(uint32_t distance)
 		rtc_getTime (&endTime);
 		mCarWash->end(endTime.Hours, endTime.Minutes, endTime.Seconds);
 
-		//print the carwash out
-		mCarWash->dbgPrint();
-
 		carState = CARCHECK_STATE_IDLE;
 		return 1;
-
 	}
 		break;
 	default:
@@ -106,7 +111,5 @@ uint8_t cCarCheck::run(uint32_t distance)
 
 cCarWash *cCarCheck::getCarWash()
 {
-	cCarWash *temp = mCarWash;
-	mCarWash = 0;
-	return temp;
+	return mCarWash;
 }

@@ -57,7 +57,6 @@
 cHw HW = cHw();
 cSPI spi1 = cSPI();
 
-
 cUltraSSensor *distanceSensor = 0;
 
 uint8_t triggerDistance;
@@ -67,106 +66,133 @@ cOutput *triggers[SENSOR_COUNT];
 cUltraSSensor *sensors[SENSOR_COUNT];
 cCarCheck *carcheckers[SENSOR_COUNT];
 
+void resetSource()
+{
+	if (READ_BIT(RCC->CSR, RCC_CSR_LPWRRSTF))
+		printf("Reset        : Low-power\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_WWDGRSTF))
+		printf("Reset        : Window watchdog\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_IWDGRSTF))
+		printf("Reset        : Independent Window watchdog\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_SFTRSTF))
+		printf("Reset        : Software reset\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_PORRSTF))
+		printf("Reset        : Power on\n");
+//   if(READ_BIT(RCC->CSR, RCC_CSR_PINRSTF))
+//      printf("Reset        : Pin\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_FWRSTF))
+		printf("Reset        : Firewall\n");
+	if (READ_BIT(RCC->CSR, RCC_CSR_OBLRSTF))
+		printf("Reset        : Options bytes load\n");
+
+	SET_BIT(RCC->CSR, RCC_CSR_RMVF);
+}
+
 int main(void)
 {
-    /* MCU Configuration----------------------------------------------------------*/
-    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
+	/* MCU Configuration----------------------------------------------------------*/
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-    /* Configure the system clock */
-    HW.SystemClock_Config();
+	/* Configure the system clock */
+	HW.SystemClock_Config();
 
-    /* Initialize the terminal */
-    terminal_init();
+	/* Initialize the terminal */
+	terminal_init();
 
-    /* Initialize all configured peripherals */
-    HW.Gpio_Init();
+	/* Initialize all configured peripherals */
+	HW.Gpio_Init();
 
-    rtc_init();
+	rtc_init();
+	printf("Flash size   : %d kB\n", HW.GetFlashSize());
+	printf("System Clock : %dHz\n\r", (int) HAL_RCC_GetSysClockFreq());
+	resetSource();
+	spi1.init(SPI1, (uint32_t) 10000000);
 
-    printf("Flash size   : %d kB\n", HW.GetFlashSize());
-    printf("System Clock : %dHz\n\r", (int)HAL_RCC_GetSysClockFreq());
+	memcpy(&triggerDistance, nvm_get_CarDistance(), 1);
+	memcpy(&triggerTime, nvm_get_CarTime(), 1);
 
-    spi1.init(SPI1, (uint32_t)10000000);
+	TimerIc.init();
+	cTimerIc *timer = &TimerIc;
 
-	memcpy(&triggerDistance, nvm_get_CarDistance(),1);
-	memcpy(&triggerTime, nvm_get_CarTime(),1);
+	uint8_t i = 0;
 
-    TimerIc.init();
-    cTimerIc *timer = &TimerIc;
+	triggers[i] = new cOutput(GPIOB, GPIO_PIN_0);
+	sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_2);
+	carcheckers[i] = new cCarCheck(triggerDistance, triggerTime, i);
 
-    uint8_t i = 0;
+	i++;
 
-    triggers[i] = new cOutput(GPIOB, GPIO_PIN_0);
-    sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_2);
-    carcheckers[i] = new cCarCheck(triggerDistance, triggerTime, i);
-
-    i++;
-
-    triggers[i] = new cOutput(GPIOA, GPIO_PIN_10);
-    sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
-    carcheckers[1] = new cCarCheck(triggerDistance, triggerTime, i);
+	triggers[i] = new cOutput(GPIOA, GPIO_PIN_10);
+	sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
+	carcheckers[1] = new cCarCheck(triggerDistance, triggerTime, i);
 
 	uint8_t idx = 0;
-    /* Infinite loop */
-    while (1)
-    {
-    	terminal_run();
+	/* Infinite loop */
+	while (1)
+	{
+		terminal_run();
 
-    	bool timerRunning = distanceSensor->run();
+		bool timerRunning = distanceSensor->run();
 
-    	if (!timerRunning)
-    	{
-    		//select next sample count
-    		if(idx++ == 1)
-    			idx = 0;
+		if (!timerRunning)
+		{
+			//select next sample count
+			if (idx++ == 1)
+				idx = 0;
 
-    		distanceSensor = sensors[idx];
-    		distanceSensor->sample();
-    	}
+			distanceSensor = sensors[idx];
+			distanceSensor->sample();
+		}
 
-    	uint32_t s = distanceSensor->getLastSample();
-    	if(s)
-    	{
-    		carcheckers[idx]->run(s);
-    	}
-    }
+		uint32_t s = distanceSensor->getLastSample();
+		if (s)
+		{
+			if (carcheckers[idx]->run(s))
+			{
+				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
+				gewasdeKar->dbgPrint();
+				delete (gewasdeKar);
+				printf("karwasdaar\n");
+			}
+		}
+	}
 }
 
 void carDistance(uint8_t argc, char **argv)
 {
-    if (argc == 1)
-    {
-    	printf("trigDistance: %dcm\n", triggerDistance);
-    }
-    else if (argc == 2)
-    {
-    	uint8_t data = atoi(argv[1]);
-    	if (nvm_set_CarDistance(&data) != 1)
-    		printf("'n fokken gemors\n");
+	if (argc == 1)
+	{
+		printf("trigDistance: %dcm\n", triggerDistance);
+	}
+	else if (argc == 2)
+	{
+		uint8_t data = atoi(argv[1]);
+		if (nvm_set_CarDistance(&data) != 1)
+			printf("'n fokken gemors\n");
 
-    	triggerDistance = data;
-    	printf("trigDistance: %dcm\n", triggerDistance);
-    }
+		triggerDistance = data;
+		printf("trigDistance: %dcm\n", triggerDistance);
+	}
 }
 sTermEntry_t carDistEntry =
 { "cd", "Set/Get the car trigger distance", carDistance };
 
 void carTime(uint8_t argc, char **argv)
 {
-    if (argc == 1)
-    {
-    	printf("trigTime: %d\n", triggerTime);
-    }
-    else if (argc == 2)
-    {
-    	uint8_t data = atoi(argv[1]);
-    	if (nvm_set_CarTime(&data) != 1)
-    		printf("'n fokken gemors\n");
+	if (argc == 1)
+	{
+		printf("trigTime: %d\n", triggerTime);
+	}
+	else if (argc == 2)
+	{
+		uint8_t data = atoi(argv[1]);
+		if (nvm_set_CarTime(&data) != 1)
+			printf("'n fokken gemors\n");
 
-    	triggerTime = data;
-    	printf("trigTime: %dcm\n", triggerTime);
-    }
+		triggerTime = data;
+		printf("trigTime: %dcm\n", triggerTime);
+	}
 }
 sTermEntry_t carTimeEntry =
 { "ct", "Set/Get the car trigger time", carTime };
@@ -176,9 +202,9 @@ void distance_debug(uint8_t argc, char **argv)
 	if (argc == 2)
 	{
 		uint8_t disable = atoi(argv[1]);
-		if(!disable)
+		if (!disable)
 		{
-			for(uint8_t idx = 0; idx < SENSOR_COUNT; idx++)
+			for (uint8_t idx = 0; idx < SENSOR_COUNT; idx++)
 				sensors[idx]->setDebug(0);
 			printf(CYAN("disabled debug\n"));
 			return;
@@ -222,7 +248,7 @@ void spiTry(uint8_t argc, char **argv)
 }
 
 sTermEntry_t spiEntry =
-{ "s", "spishit", spiTry};
+{ "s", "spishit", spiTry };
 
 void RspiTry(uint8_t argc, char **argv)
 {
@@ -234,22 +260,23 @@ void RspiTry(uint8_t argc, char **argv)
 
 	spi1.read(0x0, data, cnt);
 
-	for(int i=0; i < cnt; i++)
+	for (int i = 0; i < cnt; i++)
 		printf("data %X\n", data[i]);
 }
 
 sTermEntry_t readspiEntry =
-{ "sr", "spishitread", RspiTry};
+{ "sr", "spishitread", RspiTry };
 
 void WspiTry(uint8_t argc, char **argv)
 
 {
-	uint8_t data[4] = { 0xFF, 0x01, 0x00, 0x04};
+	uint8_t data[4] =
+	{ 0xFF, 0x01, 0x00, 0x04 };
 	spi1.write(0x0, data, 4);
 }
 
 sTermEntry_t writespiEntry =
-{ "sw", "spishitwrite", WspiTry};
+{ "sw", "spishitwrite", WspiTry };
 
 void EspiTry(uint8_t argc, char **argv)
 {
@@ -257,27 +284,26 @@ void EspiTry(uint8_t argc, char **argv)
 }
 
 sTermEntry_t erasespiEntry =
-{ "se", "spi erase", EspiTry};
-
+{ "se", "spi erase", EspiTry };
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
-    RTC_TimeTypeDef time;
-    rtc_getTime(&time);
+	RTC_TimeTypeDef time;
+	rtc_getTime(&time);
 
-    if (argc == 1)
-    {
-        printf("Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
-    }
-    else if (argc == 3)
-    {
-        time.Hours = atoi(argv[1]);
-        time.Minutes = atoi(argv[2]);
-        time.Seconds = 0;
+	if (argc == 1)
+	{
+		printf("Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
+	}
+	else if (argc == 3)
+	{
+		time.Hours = atoi(argv[1]);
+		time.Minutes = atoi(argv[2]);
+		time.Seconds = 0;
 
-        rtc_setTime(time);
-        printf("Set Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
-    }
+		rtc_setTime(time);
+		printf("Set Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
+	}
 }
 sTermEntry_t rtcEntry =
 { "t", "Set/Get the rtc", rtcSetGet };
@@ -305,11 +331,9 @@ void dateSetGet(uint8_t argc, char **argv)
 sTermEntry_t dateEntry =
 { "d", "Set/Get the date", dateSetGet };
 
-
-
 void _Error_Handler(const char * file, int line)
 {
-    printf(RED("Probleem: %s\t:%d\n"), file, line);
+	printf(RED("Probleem: %s\t:%d\n"), file, line);
 }
 
 /**

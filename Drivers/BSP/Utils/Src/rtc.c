@@ -22,8 +22,7 @@
 /* Asynchonuous prediv   */
 #define PREDIV_A                  (1<<(15-N_PREDIV_S))-1
 
-static RTC_HandleTypeDef RtcHandle =
-{ 0 };
+RTC_HandleTypeDef RtcHandle;
 
 void rtc_init()
 {
