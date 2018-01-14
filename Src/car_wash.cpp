@@ -8,6 +8,7 @@
 #include "car_wash.h"
 #include <string.h>
 
+#include "../Drivers/BSP/Utils/Inc/rtc.h"
 cCarWash::cCarWash(uint8_t bayNumber, uint8_t day, uint8_t month, uint8_t year)
 {
 	mSecond = 0;
@@ -54,6 +55,20 @@ void cCarWash::dbgPrint()
 	printf("Date: %d/%d/20%02d\n", mCarWashObj.date_dayOfMonth, mCarWashObj.date_monthOfYear, mCarWashObj.date_year);
 	printf("Time: %02d:%02d\n", mCarWashObj.time_hour, mCarWashObj.time_minute);
 	printf("Duration: %02d:%02d\n", mCarWashObj.duration_minute, mCarWashObj.duration_second);
+}
+
+void cCarWash::dbgPrintObj(sCarwashObject_t obj)
+{
+	printf(GREEN_B("Carwash bay: %d\n"), obj.bayNumber);
+		printf("Date: %d/%d/20%02d\n", obj.date_dayOfMonth, obj.date_monthOfYear, obj.date_year);
+		printf("Time: %02d:%02d\n", obj.time_hour, obj.time_minute);
+		printf("Duration: %02d:%02d\n", obj.duration_minute, obj.duration_second);
+}
+
+bool cCarWash::getObject(sCarwashObject_t *obj)
+{
+	*obj = mCarWashObj;
+	return true;
 }
 
 uint8_t cCarWash::getBytes(uint8_t *data)

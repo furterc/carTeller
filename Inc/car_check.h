@@ -34,6 +34,7 @@ class cCarCheck
 	cCarWash *mCarWash = 0;
 	RTC_TimeTypeDef mStartTime;
 
+
 public:
 	cCarCheck(uint32_t triggerDistance, uint32_t triggerTime, uint8_t bayNumber);
 	virtual ~cCarCheck();

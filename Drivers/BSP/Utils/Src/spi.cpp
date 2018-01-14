@@ -45,8 +45,8 @@ HAL_StatusTypeDef cSPI::writeEnable()
 {
 	csLow();
 
-	uint8_t opCode = 0x06;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, HAL_MAX_DELAY);
+	uint8_t opCode = SPI_OPCODE_WRITE_ENABLE;
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
 
 	csHigh();
 
@@ -57,8 +57,8 @@ HAL_StatusTypeDef cSPI::writeDisable()
 {
 	csLow();
 
-	uint8_t opCode = 0x04;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, HAL_MAX_DELAY);
+	uint8_t opCode = SPI_OPCODE_WRITE_DISABLE;
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
 
 	csHigh();
 
@@ -94,7 +94,7 @@ void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	printf("spi device init\n");
+	printf("SPI Dev      : Init\n");
 }
 
 HAL_StatusTypeDef cSPI::readId(uint8_t *data, uint8_t len)
@@ -104,11 +104,11 @@ HAL_StatusTypeDef cSPI::readId(uint8_t *data, uint8_t len)
 
 	csLow();
 
-	uint8_t opCode = 0x9F;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, HAL_MAX_DELAY);
+	uint8_t opCode = SPI_OPCODE_READ_ID;
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Receive(&hspi,( uint8_t* ) data, 3, HAL_MAX_DELAY);
+		status = HAL_SPI_Receive(&hspi,( uint8_t* ) data, 3, 100);
 
 	csHigh();
 
@@ -120,29 +120,27 @@ HAL_StatusTypeDef cSPI::write(uint32_t address, uint8_t *data, uint8_t len)
 	if (address > SPI1_MAX_ADDRESS)
 		return HAL_ERROR;
 
-	//transmit write enable
 	writeEnable();
-	HAL_Delay(1);
 
 	csLow();
 
-	uint8_t opCode = 0x02;
+	uint8_t opCode = SPI_OPCODE_WRITE;
+
 	uint8_t addressBytes[3];
-	addressBytes[0] = address & 0xFF;
+	addressBytes[0] = (address >> 16) & 0xFF;
 	addressBytes[1] = (address >> 8) & 0xFF;
-	addressBytes[2] = (address >> 16) & 0xFF;
+	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, HAL_MAX_DELAY);
-
-	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, HAL_MAX_DELAY);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, data,  len, HAL_MAX_DELAY);
+		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
+
+	if (status == HAL_OK)
+		status = HAL_SPI_Transmit(&hspi, data,  len, 100);
 
 	csHigh();
 
-	HAL_Delay(1);
 	writeDisable();
 
 	return HAL_OK;
@@ -152,19 +150,20 @@ HAL_StatusTypeDef cSPI::read(uint32_t address, uint8_t *rxData, uint8_t len)
 {
 	csLow();
 
-	uint8_t opCode = 0x03;
+	uint8_t opCode = SPI_OPCODE_READ;
+
 	uint8_t addressBytes[3];
-	addressBytes[0] = address & 0xFF;
+	addressBytes[0] = (address >> 16) & 0xFF;
 	addressBytes[1] = (address >> 8) & 0xFF;
-	addressBytes[2] = (address >> 16) & 0xFF;
+	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, HAL_MAX_DELAY);
-
-	if (status == HAL_OK)
-		HAL_SPI_Transmit(&hspi, addressBytes,  3, HAL_MAX_DELAY);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
 
 	if (status == HAL_OK)
-		HAL_SPI_Receive(&hspi,( uint8_t* ) rxData, len, HAL_MAX_DELAY);
+		HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
+
+	if (status == HAL_OK)
+		HAL_SPI_Receive(&hspi,( uint8_t* ) rxData, len, 100);
 
 	csHigh();
 
@@ -174,12 +173,10 @@ HAL_StatusTypeDef cSPI::read(uint32_t address, uint8_t *rxData, uint8_t len)
 HAL_StatusTypeDef cSPI::erase(uint16_t address, uint8_t blockSizekB)
 {
 	writeEnable();
-	HAL_Delay(1);
 
 	csLow();
 
-	//set opCode for max 64kb erase
-	uint8_t opCode = 0xD8;
+	uint8_t opCode = SPI_OPCODE_ERASE_64KB;
 
 	if(blockSizekB < 4)
 		opCode = 0x20;
@@ -187,50 +184,37 @@ HAL_StatusTypeDef cSPI::erase(uint16_t address, uint8_t blockSizekB)
 		opCode = 0x52;
 
 	uint8_t addressBytes[3];
-	addressBytes[0] = address & 0xFF;
+	addressBytes[0] = (address >> 16) & 0xFF;
 	addressBytes[1] = (address >> 8) & 0xFF;
-	addressBytes[2] = (address >> 16) & 0xFF;
+	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, HAL_MAX_DELAY);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, HAL_MAX_DELAY);
+		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
 
 	csHigh();
 
-	HAL_Delay(1);
 	writeDisable();
 
 	return HAL_OK;
 }
 
-HAL_StatusTypeDef cSPI::chipErase(uint16_t address, uint8_t blockSizekB)
+HAL_StatusTypeDef cSPI::chipErase()
 {
 	writeEnable();
-	HAL_Delay(1);
 
 	csLow();
 
-	uint8_t opCode = 0x60;
-
-	uint8_t addressBytes[3];
-	addressBytes[0] = address & 0xFF;
-	addressBytes[1] = (address >> 8) & 0xFF;
-	addressBytes[2] = (address >> 16) & 0xFF;
-
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, HAL_MAX_DELAY);
-
-	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, HAL_MAX_DELAY);
+	uint8_t opCode = SPI_OPCODE_CHIP_ERASE;
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
 
 	csHigh();
 
-	HAL_Delay(1);
 	writeDisable();
 
-	return HAL_OK;
+	return status;
 }
-
 
 void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 {

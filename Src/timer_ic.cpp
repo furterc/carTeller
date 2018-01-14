@@ -53,7 +53,6 @@ void cTimerIc::init()
 	{
 		_Error_Handler(__FILE__, __LINE__);
 	}
-	printf("IC init\n");
 
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;

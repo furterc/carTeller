@@ -44,6 +44,8 @@
 #include "commands.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "../Drivers/BSP/Utils/Inc/rtc.h"
 #include "nvm.h"
 #include "car_check.h"
 #include "spi.h"
@@ -53,9 +55,15 @@
 #include "timer_ic.h"
 #include "ultra_s_sensor.h"
 #include "hw.h"
+#include "log.h"
+#include "crc.h"
+
 
 cHw HW = cHw();
+
 cSPI spi1 = cSPI();
+
+cLog log = cLog(&spi1);
 
 cUltraSSensor *distanceSensor = 0;
 
@@ -103,11 +111,23 @@ int main(void)
 	/* Initialize all configured peripherals */
 	HW.Gpio_Init();
 
-	rtc_init();
+	printf(GREEN("Welcome to the Car Wash Counter\n"));
 	printf("Flash size   : %d kB\n", HW.GetFlashSize());
 	printf("System Clock : %dHz\n\r", (int) HAL_RCC_GetSysClockFreq());
 	resetSource();
+
+	cRTC::getInstance()->init();
+
 	spi1.init(SPI1, (uint32_t) 10000000);
+
+	if (log.init() == HAL_OK)
+	{
+		printf("LOG          : Init\n");
+		printf("LOG Cur Addr : 0x%08X\n", (unsigned int)log.getWashDataAddress());
+	}
+	else
+		printf(RED("LOG          : !Init\n"));
+
 
 	memcpy(&triggerDistance, nvm_get_CarDistance(), 1);
 	memcpy(&triggerTime, nvm_get_CarTime(), 1);
@@ -152,8 +172,11 @@ int main(void)
 			{
 				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
 				gewasdeKar->dbgPrint();
+				sCarwashObject_t carWashObj;
+				gewasdeKar->getObject(&carWashObj);
+				log.addWashEntry(&carWashObj);
+
 				delete (gewasdeKar);
-				printf("karwasdaar\n");
 			}
 		}
 	}
@@ -252,16 +275,23 @@ sTermEntry_t spiEntry =
 
 void RspiTry(uint8_t argc, char **argv)
 {
+	uint32_t startAddr = 0x010000;
 	uint8_t cnt = atoi(argv[1]);
 
-	printf("read %d bytes from 0x1000\b", cnt);
+	printf("read %d entries from 0x%08X\n", cnt, (unsigned int)startAddr);
 
-	uint8_t data[50];
+	uint8_t data[16];
+	for (uint8_t idx = 0; idx<cnt; idx++)
+	{
+		spi1.read(startAddr, data, 16);
 
-	spi1.read(0x0, data, cnt);
-
-	for (int i = 0; i < cnt; i++)
-		printf("data %X\n", data[i]);
+		printf("data @ 0x%08X: ", (unsigned int)startAddr);
+		for (int i = 0; i < 16; i++)
+			printf(" 0x%02X", data[i]);
+		printf("\n");
+		HAL_Delay(100);
+		startAddr += 0x10;
+	}
 }
 
 sTermEntry_t readspiEntry =
@@ -270,9 +300,33 @@ sTermEntry_t readspiEntry =
 void WspiTry(uint8_t argc, char **argv)
 
 {
-	uint8_t data[4] =
-	{ 0xFF, 0x01, 0x00, 0x04 };
-	spi1.write(0x0, data, 4);
+//uint8_t buf[4] = {0x00, 0x01,  0x02, 0x03};
+//printf("buf:");
+//for(uint8_t idx = 0; idx<4; idx++)
+//	printf(" 0x%02X", buf[idx]);
+//printf("\n");
+//
+//uint8_t crcBuf[5];
+//
+//memcpy(crcBuf, buf, 4);
+//uint8_t crc = cCrc::crc8(buf, 4);
+//crcBuf[4] = crc;
+//
+//printf("crcd buf:");
+//for(uint8_t idx = 0; idx<5; idx++)
+//	printf(" 0x%02X", crcBuf[idx]);
+//printf("\n");
+//
+//printf("crcof buf: 0x%02X", cCrc::crc8(crcBuf, 5));
+
+
+	uint8_t data = 0x54;
+	spi1.write(0x010000, &data, 1);
+
+//	uint8_t data[2] =
+//	{ 0x00, 0x01};//, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
+//	spi1.write(0x010000, data, 2);
+//	spi1.write(0x010010, data, 10);
 }
 
 sTermEntry_t writespiEntry =
@@ -280,7 +334,10 @@ sTermEntry_t writespiEntry =
 
 void EspiTry(uint8_t argc, char **argv)
 {
-	spi1.erase(0x0, 4);
+//	printf("washAddr: 0x%08X\n", log.getWashDataAddress());
+
+	log.eraseDevice();
+//	spi1.erase(0x0, 4);
 }
 
 sTermEntry_t erasespiEntry =
@@ -288,12 +345,11 @@ sTermEntry_t erasespiEntry =
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
-	RTC_TimeTypeDef time;
-	rtc_getTime(&time);
+	RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
 
 	if (argc == 1)
 	{
-		printf("Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
+		printf("Time: %d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds);
 	}
 	else if (argc == 3)
 	{
@@ -301,7 +357,7 @@ void rtcSetGet(uint8_t argc, char **argv)
 		time.Minutes = atoi(argv[2]);
 		time.Seconds = 0;
 
-		rtc_setTime(time);
+		cRTC::getInstance()->setTime(time);
 		printf("Set Time: %d:%d:%d\n", time.Hours, time.Minutes, time.Seconds);
 	}
 }
@@ -311,8 +367,7 @@ sTermEntry_t rtcEntry =
 void dateSetGet(uint8_t argc, char **argv)
 {
 
-	RTC_DateTypeDef date;
-	rtc_getDate(&date);
+	RTC_DateTypeDef date = cRTC::getInstance()->getDate();
 
 	if (argc == 1)
 	{
@@ -324,7 +379,7 @@ void dateSetGet(uint8_t argc, char **argv)
 		date.Month = atoi(argv[2]);
 		date.Year = atoi(argv[3]);
 
-		rtc_setDate(date);
+		cRTC::getInstance()->setDate(date);
 		printf("Set Date: %d/%d/20%02d\n", date.Date, date.Month, date.Year);
 	}
 }

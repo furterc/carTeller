@@ -32,7 +32,7 @@ uint8_t cCarCheck::run(uint32_t distance)
 		/* car detected */
 		if (distance < mTriggerDistance)
 		{
-			rtc_getTime(&mStartTime);
+			mStartTime =cRTC::getInstance()->getTime();
 			carState = CARCHECK_STATE_DETECT;
 		}
 
@@ -59,8 +59,7 @@ uint8_t cCarCheck::run(uint32_t distance)
 		/* this is a car */
 		if (mCarCount > mTriggerTime)
 		{
-			RTC_DateTypeDef startDate;
-			rtc_getDate(&startDate);
+			RTC_DateTypeDef startDate = cRTC::getInstance()->getDate();
 
 			//if there is not a carwash obj, make one
 			if(!mCarWash)
@@ -93,8 +92,7 @@ uint8_t cCarCheck::run(uint32_t distance)
 		/* car got away */
 	case CARCHECK_STATE_END:
 	{
-		RTC_TimeTypeDef endTime;
-		rtc_getTime (&endTime);
+		RTC_TimeTypeDef endTime = cRTC::getInstance()->getTime();
 		mCarWash->end(endTime.Hours, endTime.Minutes, endTime.Seconds);
 
 		carState = CARCHECK_STATE_IDLE;
@@ -111,5 +109,7 @@ uint8_t cCarCheck::run(uint32_t distance)
 
 cCarWash *cCarCheck::getCarWash()
 {
-	return mCarWash;
+	cCarWash *temp = mCarWash;
+	mCarWash = 0;
+	return temp;
 }

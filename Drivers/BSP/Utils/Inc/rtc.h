@@ -1,29 +1,34 @@
 /*
- * rtc.h
+ * cRTC.h
  *
- *  Created on: 11 Nov 2017
+ *  Created on: 12 Jan 2018
  *      Author: christo
  */
 
-#ifndef SRC_RTC_H_
-#define SRC_RTC_H_
+#ifndef DRIVERS_BSP_UTILS_CRTC_H_
+#define DRIVERS_BSP_UTILS_CRTC_H_
 
 #include "stm32l0xx_hal.h"
-#include "stm32l0xx.h"
+#include "terminal.h"
 
+#define N_PREDIV_S                 10 /* subsecond number of bits */
+#define PREDIV_S                  ((1<<N_PREDIV_S)-1) /* Synchonuous prediv  */
+#define PREDIV_A                  (1<<(15-N_PREDIV_S))-1/* Asynchonuous prediv   */
 
-#ifdef __cplusplus
- extern "C" {
-#endif
+class cRTC
+{
+	RTC_HandleTypeDef RtcHandle;
+public:
+	cRTC();
+	virtual ~cRTC();
+	static cRTC *getInstance();
+	void init();
 
-void rtc_init();
-void rtc_getTime(RTC_TimeTypeDef *time);
-void rtc_setTime(RTC_TimeTypeDef time);
-void rtc_getDate(RTC_DateTypeDef *date);
-void rtc_setDate(RTC_DateTypeDef date);
+	void setTime(RTC_TimeTypeDef time);
+	RTC_TimeTypeDef getTime();
 
-#ifdef __cplusplus
-}
-#endif
+	void setDate(RTC_DateTypeDef date);
+	RTC_DateTypeDef getDate();
+	};
 
-#endif /* SRC_RTC_H_ */
+#endif /* DRIVERS_BSP_UTILS_CRTC_H_ */
