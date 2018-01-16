@@ -24,19 +24,18 @@ typedef struct
 	uint8_t time_second;
 	uint8_t duration_minute;
 
+	uint32_t placekeeper;
+
 	uint8_t duration_second;
 	uint8_t entry_set;
 	uint8_t ack;
 	uint8_t crc;
 
-	uint32_t placekeeper;
 } sCarwashObject_t;
 
 class cCarWash
 {
 	sCarwashObject_t mCarWashObj;
-
-	uint8_t mSecond;
 public:
 
 	cCarWash(uint8_t bayNumber, uint8_t day, uint8_t month, uint8_t year);

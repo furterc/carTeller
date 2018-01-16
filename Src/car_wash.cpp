@@ -11,7 +11,6 @@
 #include "../Drivers/BSP/Utils/Inc/rtc.h"
 cCarWash::cCarWash(uint8_t bayNumber, uint8_t day, uint8_t month, uint8_t year)
 {
-	mSecond = 0;
 	mCarWashObj.bayNumber = bayNumber;
 	mCarWashObj.date_dayOfMonth = day;
 	mCarWashObj.date_monthOfYear = month;
@@ -27,7 +26,7 @@ void cCarWash::start(uint8_t hour, uint8_t minute, uint8_t second)
 {
 	mCarWashObj.time_hour  = hour;
 	mCarWashObj.time_minute = minute;
-	mSecond = second;
+	mCarWashObj.time_second = second;
 }
 
 void cCarWash::end(uint8_t hour, uint8_t minute, uint8_t second)
@@ -40,10 +39,10 @@ void cCarWash::end(uint8_t hour, uint8_t minute, uint8_t second)
 
 	durMinute = minute - mCarWashObj.time_minute;
 
-	if (second < mSecond)
+	if (second < mCarWashObj.time_second)
 		second += 60;
 
-	durSecond = second - mSecond;
+	durSecond = second - mCarWashObj.time_second;
 
 	mCarWashObj.duration_minute = durMinute;
 	mCarWashObj.duration_second = durSecond;
@@ -67,6 +66,10 @@ void cCarWash::dbgPrintObj(sCarwashObject_t obj)
 
 bool cCarWash::getObject(sCarwashObject_t *obj)
 {
+	mCarWashObj.placekeeper = 0xFFFFFFFF;
+	mCarWashObj.entry_set = 0x00;
+	mCarWashObj.ack = 0xFF;
+
 	*obj = mCarWashObj;
 	return true;
 }

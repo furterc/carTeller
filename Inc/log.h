@@ -50,6 +50,7 @@ public:
 	uint32_t getWashDataAddress();
 	HAL_StatusTypeDef getWashEntry(uint32_t addr, sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntry(sCarwashObject_t *obj);
+	void dumpLog();
 };
 
 #endif /* SRC_LOG_H_ */

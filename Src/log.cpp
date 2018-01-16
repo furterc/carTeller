@@ -6,6 +6,7 @@
  */
 
 #include "log.h"
+#include "terminal.h"
 
 cLog::cLog(cSPI *spi)
 {
@@ -85,17 +86,22 @@ HAL_StatusTypeDef cLog::getWashEntry(uint32_t addr, sCarwashObject_t *obj)
 	if (mSPI->read(addr, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
 		printf(RED("getWasErr"));
 
-//	uint8_t crc = cCrc::crc8((uint8_t *)obj, mWashEntrySize);
-//	printf("crc: 0x%02X\n", crc);
+	/* check the crc */
+	uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize);
+	if (crc)
+	{
+		printf(RED("crc @ 0x%08X failed\n"), (unsigned int) addr);
+		return HAL_ERROR;
+	}
 
 	return HAL_OK;
 }
 
 HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
 {
-	//set the crc
-//	uint8_t crc = cCrc::crc8((uint8_t *)obj, mWashEntrySize-1);
-//	obj->crc = crc;
+	/* set the crc */
+	uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize - 1);
+	obj->crc = crc;
 
 	if (mSPI->write(mWashDataAddress, (uint8_t *) obj, mWashEntrySize)
 			!= HAL_OK)
@@ -106,4 +112,27 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
 	mWashDataAddress += mWashEntrySize;
 
 	return HAL_OK;
+}
+
+void cLog::dumpLog()
+{
+	uint32_t addr = LOG_WASH_DATA_SECTOR_START;
+	sCarwashObject_t obj;
+
+
+	printf(",Date,,,Time,,,Duration\n");
+	printf("bay,");
+	printf("day,month,year,");
+	printf("hour,minute,second,");
+	printf("minute,second\n");
+	while (addr < mWashDataAddress)
+	{
+		getWashEntry(addr, &obj);
+		printf("%d,", obj.bayNumber);
+		printf("%d,%d,20%02d,", obj.date_dayOfMonth, obj.date_monthOfYear, obj.date_year);
+		printf("%d,%02d,%02d,", obj.time_hour, obj.time_minute, obj.time_second);
+		printf("%d,%02d\n", obj.duration_minute, obj.duration_second);
+
+		addr += mWashEntrySize;
+	}
 }
