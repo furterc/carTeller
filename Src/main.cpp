@@ -320,7 +320,6 @@ void RspiTry(uint8_t argc, char **argv)
 		for (int i = 0; i < 16; i++)
 			printf(" 0x%02X", data[i]);
 		printf("\n");
-		HAL_Delay(100);
 		startAddr += 0x10;
 	}
 }
