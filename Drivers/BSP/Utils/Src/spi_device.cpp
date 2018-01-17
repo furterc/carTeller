@@ -55,7 +55,7 @@ HAL_StatusTypeDef cSpiDevice::write(uint32_t address, uint8_t *txData,
 	HAL_StatusTypeDef status = mSPI->writeOpCodeAt(address, SPI_OPCODE_WRITE);
 
 	if (status == HAL_OK)
-		mSPI->write(address, txData, len);
+		mSPI->write(txData, len);
 
 	csHigh();
 	writeDisable();
@@ -71,7 +71,7 @@ HAL_StatusTypeDef cSpiDevice::read(uint32_t address, uint8_t *rxData,
 	HAL_StatusTypeDef status = mSPI->writeOpCodeAt(address, SPI_OPCODE_READ);
 
 	if (status == HAL_OK)
-		status = mSPI->read(address, rxData, len);
+		status = mSPI->read(rxData, len);
 
 	csHigh();
 

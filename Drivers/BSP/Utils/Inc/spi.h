@@ -43,8 +43,8 @@ public:
 
 	void init(SPI_TypeDef *spiNum, uint32_t frequency);
 
-	HAL_StatusTypeDef write(uint32_t address, uint8_t *txData, uint8_t len);
-	HAL_StatusTypeDef read(uint32_t address, uint8_t *rxData, uint8_t len);
+	HAL_StatusTypeDef write(uint8_t *txData, uint8_t len);
+	HAL_StatusTypeDef read(uint8_t *rxData, uint8_t len);
 
 	HAL_StatusTypeDef writeOpCode(uint8_t opCode);
 	HAL_StatusTypeDef writeOpCodeAt(uint16_t address, uint8_t opCode);

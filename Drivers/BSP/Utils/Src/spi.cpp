@@ -68,12 +68,12 @@ void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 	printf("SPI Dev      : Init\n");
 }
 
-HAL_StatusTypeDef cSPI::write(uint32_t address, uint8_t *data, uint8_t len)
+HAL_StatusTypeDef cSPI::write(uint8_t *data, uint8_t len)
 {
 	return HAL_SPI_Transmit(&hspi, data, len, 100);
 }
 
-HAL_StatusTypeDef cSPI::read(uint32_t address, uint8_t *rxData, uint8_t len)
+HAL_StatusTypeDef cSPI::read(uint8_t *rxData, uint8_t len)
 {
 	return HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
 }
