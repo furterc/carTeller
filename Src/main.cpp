@@ -45,10 +45,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../Drivers/BSP/Utils/Inc/cir_flash_map.h"
 #include "../Drivers/BSP/Utils/Inc/rtc.h"
 #include "nvm.h"
 #include "car_check.h"
-#include "spi.h"
 #include "car_wash.h"
 
 #include "output.h"
@@ -57,13 +57,20 @@
 #include "hw.h"
 #include "log.h"
 #include "crc.h"
+#include "spi.h"
+#include "spi_device.h"
+
+
+
 
 
 cHw HW = cHw();
 
-cSPI spi1 = cSPI();
+cSPI spi = cSPI();
+cOutput spiNss = cOutput(GPIOA, GPIO_PIN_4);
+cSpiDevice spiDevice= cSpiDevice(&spi, &spiNss);
 
-cLog log = cLog(&spi1);
+cLog log = cLog(&spiDevice);
 
 cUltraSSensor *distanceSensor = 0;
 
@@ -118,7 +125,7 @@ int main(void)
 
 	cRTC::getInstance()->init();
 
-	spi1.init(SPI1, (uint32_t) 10000000);
+	spi.init(SPI1, (uint32_t) 10000000);
 
 	if (log.init() == HAL_OK)
 	{
@@ -146,6 +153,23 @@ int main(void)
 	triggers[i] = new cOutput(GPIOA, GPIO_PIN_10);
 	sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
 	carcheckers[1] = new cCarCheck(triggerDistance, triggerTime, i);
+
+
+//	Playground
+	cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
+	uint32_t startAddr = 0;
+	uint32_t endAddr = 0;
+	for(uint8_t idx=0; idx<8;idx++)
+	{
+
+		cirFlash.getSectorStart(&startAddr, idx);
+		cirFlash.getSectorEnd(&endAddr, idx);
+		printf("sector %d\tstart: 0x%06X\tend: 0x%06X\n", idx, startAddr, endAddr);
+	}
+//
+
+
+//
 
 	uint8_t idx = 0;
 	/* Infinite loop */
@@ -265,7 +289,7 @@ sTermEntry_t ddebugEntry =
 void spiTry(uint8_t argc, char **argv)
 {
 	uint8_t data[3];
-	spi1.readId(data, 3);
+	spiDevice.readId(data, 3);
 
 	printf("spi id: 0x%02X 0x%02X 0x%02X\n", data[0], data[1], data[2]);
 }
@@ -275,6 +299,13 @@ sTermEntry_t spiEntry =
 
 void RspiTry(uint8_t argc, char **argv)
 {
+	if(argc == 1)
+	{
+		printf("try to take a dump\n");
+		log.dumpLog();
+		return;
+	}
+
 	uint32_t startAddr = 0x010000;
 	uint8_t cnt = atoi(argv[1]);
 
@@ -283,7 +314,7 @@ void RspiTry(uint8_t argc, char **argv)
 	uint8_t data[16];
 	for (uint8_t idx = 0; idx<cnt; idx++)
 	{
-		spi1.read(startAddr, data, 16);
+		spiDevice.read(startAddr, data, 16);
 
 		printf("data @ 0x%08X: ", (unsigned int)startAddr);
 		for (int i = 0; i < 16; i++)
@@ -320,8 +351,8 @@ void WspiTry(uint8_t argc, char **argv)
 //printf("crcof buf: 0x%02X", cCrc::crc8(crcBuf, 5));
 
 
-	uint8_t data = 0x54;
-	spi1.write(0x010000, &data, 1);
+//	uint8_t data = 0x54;
+//	spi1.write(0x010000, &data, 1);
 
 //	uint8_t data[2] =
 //	{ 0x00, 0x01};//, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };

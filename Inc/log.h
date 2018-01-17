@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "spi.h"
+#include "spi_device.h"
 #include "stm32l0xx.h"
 #include "terminal.h"
 #include "car_wash.h"
@@ -32,7 +32,7 @@
 
 class cLog
 {
-	cSPI *mSPI = 0;
+	cSpiDevice *mSpiDevice = 0;
 	bool mInitialized;
 
 	uint32_t mWashDataAddress;
@@ -41,7 +41,7 @@ class cLog
 
 
 public:
-	cLog(cSPI *spi);
+	cLog(cSpiDevice *spiDevice);
 	virtual ~cLog();
 
 	HAL_StatusTypeDef init();

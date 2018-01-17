@@ -8,9 +8,9 @@
 #include "log.h"
 #include "terminal.h"
 
-cLog::cLog(cSPI *spi)
+cLog::cLog(cSpiDevice *spiDevice)
 {
-	mSPI = spi;
+	mSpiDevice = spiDevice;
 	mInitialized = false;
 	mWashDataAddress = 0;
 	mWashEntrySize = sizeof(sCarwashObject_t);
@@ -43,7 +43,7 @@ uint32_t cLog::getWashDataAddress()
 HAL_StatusTypeDef cLog::init()
 {
 	uint8_t data[3];
-	mSPI->readId(data, 3);
+	mSpiDevice->readId(data, 3);
 
 	uint32_t deviceId = 0;
 	deviceId |= ((data[0] & 0xFF) << 16);
@@ -67,7 +67,7 @@ HAL_StatusTypeDef cLog::eraseDevice()
 
 	printf(RED("Erasing SPI device\n"));
 
-	mSPI->chipErase();
+	mSpiDevice->chipErase();
 
 	return HAL_OK;
 }
@@ -83,7 +83,7 @@ HAL_StatusTypeDef cLog::getWashEntry(uint32_t addr, sCarwashObject_t *obj)
 		return HAL_ERROR;
 	}
 
-	if (mSPI->read(addr, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
+	if (mSpiDevice->read(addr, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
 		printf(RED("getWasErr"));
 
 	/* check the crc */
@@ -103,7 +103,7 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
 	uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize - 1);
 	obj->crc = crc;
 
-	if (mSPI->write(mWashDataAddress, (uint8_t *) obj, mWashEntrySize)
+	if (mSpiDevice->write(mWashDataAddress, (uint8_t *) obj, mWashEntrySize)
 			!= HAL_OK)
 	{
 		printf("write err @ 0x%08X\n", (unsigned int) mWashDataAddress);

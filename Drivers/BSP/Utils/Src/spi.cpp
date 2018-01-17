@@ -7,67 +7,31 @@
 
 #include "spi.h"
 
-uint32_t cSPI::SpiFrequency( uint32_t hz )
+uint32_t cSPI::SpiFrequency(uint32_t hz)
 {
 	uint32_t divisor = 0;
 	uint32_t SysClkTmp = SystemCoreClock;
 	uint32_t baudRate;
 
-	while( SysClkTmp > hz)
+	while (SysClkTmp > hz)
 	{
 		divisor++;
-		SysClkTmp= ( SysClkTmp >> 1);
+		SysClkTmp = (SysClkTmp >> 1);
 
 		if (divisor >= 7)
 			break;
 	}
 
-	baudRate =((( divisor & 0x4 ) == 0 )? 0x0 : SPI_CR1_BR_2  )|
-			((( divisor & 0x2 ) == 0 )? 0x0 : SPI_CR1_BR_1  )|
-			((( divisor & 0x1 ) == 0 )? 0x0 : SPI_CR1_BR_0  );
+	baudRate = (((divisor & 0x4) == 0) ? 0x0 : SPI_CR1_BR_2)
+			| (((divisor & 0x2) == 0) ? 0x0 : SPI_CR1_BR_1)
+			| (((divisor & 0x1) == 0) ? 0x0 : SPI_CR1_BR_0);
 
 	return baudRate;
 }
 
-void cSPI::csHigh()
-{
-	if(hspi.Instance == SPI1)
-		HAL_GPIO_WritePin(SPI1_GPIO_NSS_PORT, SPI1_GPIO_NSS_PIN, GPIO_PIN_SET);
-}
-
-void cSPI::csLow()
-{
-	if(hspi.Instance == SPI1)
-		HAL_GPIO_WritePin(SPI1_GPIO_NSS_PORT, SPI1_GPIO_NSS_PIN, GPIO_PIN_RESET);
-}
-
-HAL_StatusTypeDef cSPI::writeEnable()
-{
-	csLow();
-
-	uint8_t opCode = SPI_OPCODE_WRITE_ENABLE;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
-
-	csHigh();
-
-	return status;
-}
-
-HAL_StatusTypeDef cSPI::writeDisable()
-{
-	csLow();
-
-	uint8_t opCode = SPI_OPCODE_WRITE_DISABLE;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
-
-	csHigh();
-
-	return status;
-}
-
 cSPI::cSPI()
 {
-
+	mInitialized = false;
 }
 
 cSPI::~cSPI()
@@ -77,6 +41,9 @@ cSPI::~cSPI()
 
 void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 {
+	if(mInitialized)
+		return;
+
 	hspi.Instance = spiNum;
 	hspi.Init.Mode = SPI_MODE_MASTER;
 	hspi.Init.Direction = SPI_DIRECTION_2LINES;
@@ -84,7 +51,7 @@ void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 	hspi.Init.CLKPolarity = SPI_POLARITY_LOW;
 	hspi.Init.CLKPhase = SPI_PHASE_1EDGE;
 	hspi.Init.NSS = SPI_NSS_SOFT;
-	hspi.Init.BaudRatePrescaler = SpiFrequency( frequency );;
+	hspi.Init.BaudRatePrescaler = SpiFrequency(frequency);
 	hspi.Init.FirstBit = SPI_FIRSTBIT_MSB;
 	hspi.Init.TIMode = SPI_TIMODE_DISABLE;
 	hspi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -92,134 +59,77 @@ void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 	if (HAL_SPI_Init(&hspi) != HAL_OK)
 	{
 		_Error_Handler(__FILE__, __LINE__);
+		mInitialized = false;
+		printf("SPI Dev      : !Init\n");
+		return;
 	}
 
+	mInitialized = true;
 	printf("SPI Dev      : Init\n");
-}
-
-HAL_StatusTypeDef cSPI::readId(uint8_t *data, uint8_t len)
-{
-	if (len > 3)
-		return HAL_ERROR;
-
-	csLow();
-
-	uint8_t opCode = SPI_OPCODE_READ_ID;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, ( uint8_t* ) &opCode,  1, 100);
-
-	if (status == HAL_OK)
-		status = HAL_SPI_Receive(&hspi,( uint8_t* ) data, 3, 100);
-
-	csHigh();
-
-	return status;
 }
 
 HAL_StatusTypeDef cSPI::write(uint32_t address, uint8_t *data, uint8_t len)
 {
-	if (address > SPI1_MAX_ADDRESS)
-		return HAL_ERROR;
-
-	writeEnable();
-
-	csLow();
-
-	uint8_t opCode = SPI_OPCODE_WRITE;
-
-	uint8_t addressBytes[3];
-	addressBytes[0] = (address >> 16) & 0xFF;
-	addressBytes[1] = (address >> 8) & 0xFF;
-	addressBytes[2] = address & 0xFF;
-
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
-
-	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
-
-	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, data,  len, 100);
-
-	csHigh();
-
-	writeDisable();
-
-	return HAL_OK;
+	return HAL_SPI_Transmit(&hspi, data, len, 100);
 }
 
 HAL_StatusTypeDef cSPI::read(uint32_t address, uint8_t *rxData, uint8_t len)
 {
-	csLow();
+	return HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
+}
 
-	uint8_t opCode = SPI_OPCODE_READ;
+HAL_StatusTypeDef cSPI::writeOpCode(uint8_t opCode)
+{
+	return HAL_SPI_Transmit(&hspi, &opCode, 1, 100);;
+}
 
+HAL_StatusTypeDef cSPI::writeOpCodeAt(uint16_t address, uint8_t opCode)
+{
 	uint8_t addressBytes[3];
 	addressBytes[0] = (address >> 16) & 0xFF;
 	addressBytes[1] = (address >> 8) & 0xFF;
 	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
 
 	if (status == HAL_OK)
-		HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
-
-	if (status == HAL_OK)
-		HAL_SPI_Receive(&hspi,( uint8_t* ) rxData, len, 100);
-
-	csHigh();
+		status = HAL_SPI_Transmit(&hspi, addressBytes, 3, 100);
 
 	return HAL_OK;
 }
 
-HAL_StatusTypeDef cSPI::erase(uint16_t address, uint8_t blockSizekB)
+HAL_StatusTypeDef cSPI::readOpCode(uint8_t opCode, uint8_t *rxData, uint8_t len)
 {
-	writeEnable();
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
 
-	csLow();
+	if (status == HAL_OK)
+		HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
 
-	uint8_t opCode = SPI_OPCODE_ERASE_64KB;
+	return HAL_OK;
+}
 
-	if(blockSizekB < 4)
-		opCode = 0x20;
-	else if(blockSizekB < 32)
-		opCode = 0x52;
-
+HAL_StatusTypeDef cSPI::readOpCodeAt(uint16_t address, uint8_t opCode, uint8_t *rxData, uint8_t len)
+{
 	uint8_t addressBytes[3];
 	addressBytes[0] = (address >> 16) & 0xFF;
 	addressBytes[1] = (address >> 8) & 0xFF;
 	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes,  3, 100);
+		status = HAL_SPI_Transmit(&hspi, addressBytes, 3, 100);
 
-	csHigh();
-
-	writeDisable();
+	if (status == HAL_OK)
+		HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
 
 	return HAL_OK;
-}
-
-HAL_StatusTypeDef cSPI::chipErase()
-{
-	writeEnable();
-
-	csLow();
-
-	uint8_t opCode = SPI_OPCODE_CHIP_ERASE;
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode,  1, 100);
-
-	csHigh();
-
-	writeDisable();
-
-	return status;
 }
 
 void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
-	if(spiHandle->Instance==SPI1)
+	if (spiHandle->Instance == SPI1)
 	{
 		__HAL_RCC_SPI1_CLK_ENABLE();
 
@@ -257,7 +167,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
 void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 {
 
-	if(spiHandle->Instance==SPI1)
+	if (spiHandle->Instance == SPI1)
 	{
 		/* Peripheral clock disable */
 		__HAL_RCC_SPI1_CLK_DISABLE();
