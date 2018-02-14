@@ -62,15 +62,12 @@
 
 
 
-
-
 cHw HW = cHw();
-
 cSPI spi = cSPI();
 cOutput spiNss = cOutput(GPIOA, GPIO_PIN_4);
-cSpiDevice spiDevice= cSpiDevice(&spi, &spiNss);
+cSpiDevice spiFlash= cSpiDevice(&spi, &spiNss);
 
-cLog log = cLog(&spiDevice);
+cLog log = cLog(&spiFlash);
 
 cUltraSSensor *distanceSensor = 0;
 
@@ -159,14 +156,25 @@ int main(void)
 	cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
 	uint32_t startAddr = 0;
 	uint32_t endAddr = 0;
+
+	cirFlash.getFlashEnd(&endAddr);
+
+	printf("flash end addr: 0x%06X\n", (unsigned int)endAddr);
+
+	cirFlash.isSectorEnd(0x10000);
+	cirFlash.isSectorEnd(0x10001);
+	cirFlash.isSectorEnd(0x20001);
 	for(uint8_t idx=0; idx<8;idx++)
 	{
 
 		cirFlash.getSectorStart(&startAddr, idx);
 		cirFlash.getSectorEnd(&endAddr, idx);
-		printf("sector %d\tstart: 0x%06X\tend: 0x%06X\n", idx, startAddr, endAddr);
+		printf("sector %d\tstart: 0x%06X\tend: 0x%06X\n", idx, (unsigned int)startAddr, (unsigned int)endAddr);
 	}
+
+
 //
+
 
 
 //
@@ -289,7 +297,7 @@ sTermEntry_t ddebugEntry =
 void spiTry(uint8_t argc, char **argv)
 {
 	uint8_t data[3];
-	spiDevice.readId(data, 3);
+	spiFlash.readId(data, 3);
 
 	printf("spi id: 0x%02X 0x%02X 0x%02X\n", data[0], data[1], data[2]);
 }
@@ -314,7 +322,7 @@ void RspiTry(uint8_t argc, char **argv)
 	uint8_t data[16];
 	for (uint8_t idx = 0; idx<cnt; idx++)
 	{
-		spiDevice.read(startAddr, data, 16);
+		spiFlash.read(startAddr, data, 16);
 
 		printf("data @ 0x%08X: ", (unsigned int)startAddr);
 		for (int i = 0; i < 16; i++)

@@ -80,7 +80,7 @@ HAL_StatusTypeDef cSPI::read(uint8_t *rxData, uint8_t len)
 
 HAL_StatusTypeDef cSPI::writeOpCode(uint8_t opCode)
 {
-	return HAL_SPI_Transmit(&hspi, &opCode, 1, 100);;
+	return write(&opCode, 1);
 }
 
 HAL_StatusTypeDef cSPI::writeOpCodeAt(uint16_t address, uint8_t opCode)
@@ -90,20 +90,20 @@ HAL_StatusTypeDef cSPI::writeOpCodeAt(uint16_t address, uint8_t opCode)
 	addressBytes[1] = (address >> 8) & 0xFF;
 	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
+	HAL_StatusTypeDef status = write(&opCode, 1);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes, 3, 100);
+		status = write(addressBytes, 3);
 
 	return HAL_OK;
 }
 
 HAL_StatusTypeDef cSPI::readOpCode(uint8_t opCode, uint8_t *rxData, uint8_t len)
 {
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
+	HAL_StatusTypeDef status = write(&opCode, 1);
 
 	if (status == HAL_OK)
-		HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
+		read((uint8_t*) rxData, len);
 
 	return HAL_OK;
 }
@@ -115,13 +115,13 @@ HAL_StatusTypeDef cSPI::readOpCodeAt(uint16_t address, uint8_t opCode, uint8_t *
 	addressBytes[1] = (address >> 8) & 0xFF;
 	addressBytes[2] = address & 0xFF;
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi, &opCode, 1, 100);
+	HAL_StatusTypeDef status = write(&opCode, 1);
 
 	if (status == HAL_OK)
-		status = HAL_SPI_Transmit(&hspi, addressBytes, 3, 100);
+		status = write(addressBytes, 3);
 
 	if (status == HAL_OK)
-		HAL_SPI_Receive(&hspi, (uint8_t*) rxData, len, 100);
+		read((uint8_t*) rxData, len);
 
 	return HAL_OK;
 }
