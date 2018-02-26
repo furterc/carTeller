@@ -62,21 +62,41 @@ void HardFault_Handler(void)
 
 void USART2_IRQHandler(void)
 {
+    static uint8_t escaped;
     if (USART2->ISR & UART_FLAG_RXNE)
     {
         USART2->ICR = 0xFF;
         uint8_t c = USART2->RDR;
 
+        // escape character
+        if(c == 0x1B)
+        {
+            escaped++;
+            return;
+        }
+
+        if(escaped)
+        {
+            //escape the next byte
+            if(escaped++ > 1)
+            {
+                terminal_handleByte(0, c);
+                escaped = 0;
+            }
+            return;
+        }
+
         //echo typed character
         USART2->TDR = c;
         while (!(USART2->ISR & USART_ISR_TC));
+
         if (c == '\r')
         {
             USART2->TDR = '\n';
             while (!(USART2->ISR & USART_ISR_TC));
         }
 
-        terminal_handleByte(c);
+        terminal_handleByte(c, 0);
     }
 }
 

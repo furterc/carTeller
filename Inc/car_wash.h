@@ -37,9 +37,10 @@ class cCarWash
 {
 	sCarwashObject_t mCarWashObj;
 public:
-
 	cCarWash(uint8_t bayNumber, uint8_t day, uint8_t month, uint8_t year);
 	virtual ~cCarWash();
+
+	static HAL_StatusTypeDef checkCrc(sCarwashObject_t *obj);
 
 	void start(uint8_t hour, uint8_t minute, uint8_t second);
 	void end(uint8_t hour, uint8_t minute, uint8_t second);

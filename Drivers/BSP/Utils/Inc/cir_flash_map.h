@@ -23,6 +23,8 @@ public:
 	virtual ~cCirFlashMap();
 
 	uint32_t getSectorCount();
+	uint32_t getSectorSize();
+
 	uint32_t isSectorEnd(uint32_t addr);
 	HAL_StatusTypeDef getSectorStart(uint32_t *startAddr, uint32_t sectorCount);
 	HAL_StatusTypeDef getSectorEnd(uint32_t *endAddr, uint32_t sectorCount);

@@ -6,6 +6,7 @@
  */
 
 #include "car_wash.h"
+#include "crc.h"
 #include <string.h>
 
 #include "../Drivers/BSP/Utils/Inc/rtc.h"
@@ -74,9 +75,18 @@ bool cCarWash::getObject(sCarwashObject_t *obj)
 	return true;
 }
 
+HAL_StatusTypeDef cCarWash::checkCrc(sCarwashObject_t *obj)
+{
+	if (cCrc::crc8((uint8_t *) obj, sizeof(sCarwashObject_t)))
+		return HAL_ERROR;
+
+	return HAL_OK;
+}
+
 uint8_t cCarWash::getBytes(uint8_t *data)
 {
-	memcpy(data, &mCarWashObj, 8);
+	uint32_t size = sizeof(sCarwashObject_t);
+	memcpy(data, &mCarWashObj, size);
 
-	return sizeof(sCarwashObject_t);
+	return size;
 }

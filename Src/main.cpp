@@ -67,7 +67,9 @@ cSPI spi = cSPI();
 cOutput spiNss = cOutput(GPIOA, GPIO_PIN_4);
 cSpiDevice spiFlash= cSpiDevice(&spi, &spiNss);
 
-cLog log = cLog(&spiFlash);
+
+cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
+cLog log = cLog(&spiFlash, 0x010000, 1, 8);
 
 cUltraSSensor *distanceSensor = 0;
 
@@ -153,7 +155,7 @@ int main(void)
 
 
 //	Playground
-	cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
+
 	uint32_t startAddr = 0;
 	uint32_t endAddr = 0;
 

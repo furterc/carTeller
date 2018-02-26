@@ -37,6 +37,11 @@ uint32_t cCirFlashMap::getSectorCount()
 	return mSectors;
 }
 
+uint32_t cCirFlashMap::getSectorSize()
+{
+    return mSectorSize;
+}
+
 uint32_t cCirFlashMap::isSectorEnd(uint32_t addr)
 {
 	uint32_t tmp = mSectorSize-1;

@@ -7,19 +7,63 @@
 
 #include "log.h"
 #include "terminal.h"
+#include <stdlib.h>
 
-cLog::cLog(cSpiDevice *spiDevice)
+//uint32_t getSectorStatus(uint32_t sector)
+//{
+//
+//}
+//
+//uint32_t setSectorStatus(uint32_t sector, uint32_t address)
+//{
+//
+//}
+
+cLog::cLog(cSpiDevice *spiDevice, uint32_t sectorSize, uint32_t startSector, uint32_t sectors)
 {
 	mSpiDevice = spiDevice;
 	mInitialized = false;
 	mWashDataAddress = 0;
 	mWashEntrySize = sizeof(sCarwashObject_t);
+	mCirFlashMap = new cCirFlashMap(sectorSize, sectors);
 
+
+	mHead = 0;
+	mTail = 0;
 }
 
 cLog::~cLog()
 {
 	// TODO Auto-generated destructor stub
+}
+
+void cLog::getHeadAndTail()
+{
+//TODO moet elke start kyk vir data bits.
+
+	uint32_t tempAddress = LOG_WASH_DATA_SECTOR_START;
+
+	sCarwashObject_t tempObj;
+	getWashEntry(tempAddress, &tempObj);
+	printf("1");
+
+//	// soek begin
+//	while (cCarWash::checkCrc(&tempObj) == HAL_ERROR)
+//	{
+//		tempAddress += mWashEntrySize;
+//		getWashEntry(tempAddress, &tempObj);
+//	}
+	mHead = tempAddress;
+
+	while (cCarWash::checkCrc(&tempObj) == HAL_OK)
+	{
+		tempAddress += mWashEntrySize;
+		getWashEntry(tempAddress, &tempObj);
+	}
+	mTail= tempAddress;
+	printf("LOG Head     : 0x%08X\n", (unsigned int)mHead);
+	printf("LOG Tail     : 0x%08X\n", (unsigned int)mTail);
+//	return tempAddress;
 }
 
 uint32_t cLog::getWashDataAddress()
@@ -52,9 +96,21 @@ HAL_StatusTypeDef cLog::init()
 
 	if (deviceId == SPI_DEVICE_WHO_AM_I)
 	{
+	    mSectorChecker = new cSectorChecker(mWashEntrySize, mCirFlashMap);
+	    uint8_t bytes[mWashEntrySize];
+	    mSectorChecker->getBytes(0x4F00F, bytes, mWashEntrySize);
+	    printf("bits:");
+	    for(uint8_t i = 0; i < mWashEntrySize; i++)
+	    {
+	        printf(" %02X,", bytes[i]);
+	    }
+	    printf("\n");
+
+	    printf("ek sal @ %08X moet begin lees\n", mSectorChecker->getAddress(bytes, mWashEntrySize));
 
 		mInitialized = true;
 		mWashDataAddress = getWashDataAddress();
+		getHeadAndTail();
 		return HAL_OK;
 	}
 	return HAL_ERROR;

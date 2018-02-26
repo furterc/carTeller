@@ -2,6 +2,8 @@
 #define _TERMINAL_H
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint-gcc.h>
 #include "stm32l0xx_hal.h"
 #include "stm32l0xx.h"
 /* --------------------------- USART HW definition -------------------------------*/
@@ -59,16 +61,17 @@ typedef struct
     void (*cmdFunc)(uint8_t argc, char **argv);
 } sTermEntry_t;
 
-
 void terminal_init();
 void terminal_deInit();
 void terminal_ioInit();
 void terminal_ioDeInit();
 uint8_t terminal_run();
-void terminal_handleByte(uint8_t byte);
+void terminal_handleByte(uint8_t byte, uint8_t escaped);
 
 #ifdef __cplusplus
  }
 #endif
+
+
 
 #endif
