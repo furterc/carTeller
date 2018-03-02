@@ -18,15 +18,15 @@
  extern "C" {
 #endif
 
+typedef struct
+{
+    uint32_t triggerDistance;
+    uint32_t triggerTime;
+    uint32_t minimumTime;
+} nvm_config_t;
 
-bool nvm_erase(uint32_t Address, uint8_t words);
-bool nvm_set(uint32_t Address, uint8_t *data, uint8_t words);
-
-bool nvm_set_CarDistance(uint8_t *distance);
-uint8_t *nvm_get_CarDistance();
-
-bool nvm_set_CarTime(uint8_t *distance);
-uint8_t *nvm_get_CarTime();
+HAL_StatusTypeDef nvm_getConfig(nvm_config_t *nvm);
+HAL_StatusTypeDef nvm_setConfig(nvm_config_t *nvm);
 
 #ifdef __cplusplus
  }

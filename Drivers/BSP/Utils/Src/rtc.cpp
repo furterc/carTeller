@@ -7,8 +7,6 @@
 
 #include "../Inc/rtc.h"
 
-#include <stdio.h>
-
 cRTC::cRTC()
 {
 	// TODO Auto-generated constructor stub
@@ -27,7 +25,7 @@ cRTC *cRTC::getInstance()
 	return &instance;
 }
 
-void cRTC::init()
+HAL_StatusTypeDef cRTC::init()
 {
 	RtcHandle.Instance = RTC;
 
@@ -38,14 +36,10 @@ void cRTC::init()
 	RtcHandle.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
 	RtcHandle.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
 
-	HAL_RTC_Init(&RtcHandle);
+	if(HAL_RTC_Init(&RtcHandle) != HAL_OK)
+	    return HAL_ERROR;
 
-	RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
-	RTC_DateTypeDef date = cRTC::getInstance()->getDate();
-
-	printf("RTC          : Init\n");
-	printf("RTC Time     : %d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds);
-	printf("RTC Date     : %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+	return HAL_OK;
 }
 
 void cRTC::setTime(RTC_TimeTypeDef time)

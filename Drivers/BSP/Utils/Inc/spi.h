@@ -41,7 +41,7 @@ public:
 	cSPI();
 	virtual ~cSPI();
 
-	void init(SPI_TypeDef *spiNum, uint32_t frequency);
+	HAL_StatusTypeDef init(SPI_TypeDef *spiNum, uint32_t frequency);
 
 	HAL_StatusTypeDef write(uint8_t *txData, uint8_t len);
 	HAL_StatusTypeDef read(uint8_t *rxData, uint8_t len);

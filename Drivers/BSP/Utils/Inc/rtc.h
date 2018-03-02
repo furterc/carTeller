@@ -22,7 +22,7 @@ public:
 	cRTC();
 	virtual ~cRTC();
 	static cRTC *getInstance();
-	void init();
+	HAL_StatusTypeDef init();
 
 	void setTime(RTC_TimeTypeDef time);
 	RTC_TimeTypeDef getTime();

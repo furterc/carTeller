@@ -39,10 +39,10 @@ cSPI::~cSPI()
 
 }
 
-void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
+HAL_StatusTypeDef cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 {
 	if(mInitialized)
-		return;
+		return HAL_BUSY;
 
 	hspi.Instance = spiNum;
 	hspi.Init.Mode = SPI_MODE_MASTER;
@@ -60,12 +60,11 @@ void cSPI::init(SPI_TypeDef *spiNum, uint32_t frequency)
 	{
 		_Error_Handler(__FILE__, __LINE__);
 		mInitialized = false;
-		printf("SPI Dev      : !Init\n");
-		return;
+		return HAL_ERROR;
 	}
 
 	mInitialized = true;
-	printf("SPI Dev      : Init\n");
+	return HAL_OK;
 }
 
 HAL_StatusTypeDef cSPI::write(uint8_t *data, uint8_t len)
