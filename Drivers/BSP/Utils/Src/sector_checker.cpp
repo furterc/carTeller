@@ -29,24 +29,19 @@ cSectorChecker::~cSectorChecker()
 
 uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len)
 {
-    printf("1");
     if (!mInitialized)
         return 0;
-    printf("2");
+
     if (len != mEntrySize)
         return 0;
-    printf("3");
+
     uint8_t b[len];
-    printf("4");
     memset(b, 0xFF, len);
-    printf("5");
+
     while(address > mMap->getSectorSize())
         address -= mMap->getSectorSize();
-    printf("6");
-    printf("\n");
 
     uint32_t bitsToSet = address / (mEntriesPerBit * mEntrySize);
-    printf("bitsToSet = %d for %08X\n", bitsToSet, address);
 
     uint8_t byteCount = 0;
     while(bitsToSet > 8)
@@ -62,8 +57,7 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
 
     memcpy(bytes, b, len);
 
-    return 0;
-//    for(uint8_t)
+    return len;
 }
 
 uint32_t cSectorChecker::getAddress(uint8_t *bytes, uint32_t len)

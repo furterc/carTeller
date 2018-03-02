@@ -42,10 +42,13 @@ uint32_t cCirFlashMap::getSectorSize()
     return mSectorSize;
 }
 
-uint32_t cCirFlashMap::isSectorEnd(uint32_t addr)
+uint32_t cCirFlashMap::isSectorBoundry(uint32_t addr)
 {
 	uint32_t tmp = mSectorSize-1;
-	return ((~addr & tmp) == tmp);
+	if((~addr & tmp) == tmp)
+	    return (addr >> mBitShiftCnt);
+
+	return 0;
 }
 
 

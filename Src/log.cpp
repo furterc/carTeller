@@ -96,17 +96,17 @@ HAL_StatusTypeDef cLog::init()
 
 	if (deviceId == SPI_DEVICE_WHO_AM_I)
 	{
-	    mSectorChecker = new cSectorChecker(mWashEntrySize, mCirFlashMap);
-	    uint8_t bytes[mWashEntrySize];
-	    mSectorChecker->getBytes(0x4F00F, bytes, mWashEntrySize);
-	    printf("bits:");
-	    for(uint8_t i = 0; i < mWashEntrySize; i++)
-	    {
-	        printf(" %02X,", bytes[i]);
-	    }
-	    printf("\n");
-
-	    printf("ek sal @ %08X moet begin lees\n", mSectorChecker->getAddress(bytes, mWashEntrySize));
+//	    mSectorChecker = new cSectorChecker(mWashEntrySize, mCirFlashMap);
+//	    uint8_t bytes[mWashEntrySize];
+//	    mSectorChecker->getBytes(0x4F00F, bytes, mWashEntrySize);
+//	    printf("bits:");
+//	    for(uint8_t i = 0; i < mWashEntrySize; i++)
+//	    {
+//	        printf(" %02X,", bytes[i]);
+//	    }
+//	    printf("\n");
+//
+//	    printf("ek sal @ %08X moet begin lees\n", mSectorChecker->getAddress(bytes, mWashEntrySize));
 
 		mInitialized = true;
 		mWashDataAddress = getWashDataAddress();

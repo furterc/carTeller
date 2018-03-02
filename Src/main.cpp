@@ -146,7 +146,7 @@ int main(void)
     else
         printf(RED("failed\n"));
 
-    /* swho the time */
+    /* show the time */
     {
         RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
 	    RTC_DateTypeDef date = cRTC::getInstance()->getDate();
@@ -161,55 +161,27 @@ int main(void)
 	else
 	    printf(RED("failed\n"));
 
+	/* initialize the log */
 	printf("LOG          : ");
 	if (log.init() == HAL_OK)
 		printf(GREEN("initialized\n"));
 	else
 		printf(RED("failed\n"));
 
-
+	/* initialize the timerIc */
 	TimerIc.init();
 	cTimerIc *timer = &TimerIc;
 
-	uint8_t i = 0;
+	/* initialize sensor 0 */
+	triggers[0]     = new cOutput(GPIOB, GPIO_PIN_0);
+	sensors[0]      = new cUltraSSensor(timer, triggers[0], TIM_CHANNEL_2);
+	carcheckers[0]  = new cCarCheck(nvm->triggerDistance, nvm->triggerTime, 0);
 
-	triggers[i] = new cOutput(GPIOB, GPIO_PIN_0);
-	sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_2);
-	carcheckers[i] = new cCarCheck(nvm->triggerDistance, nvm->triggerTime, i);
+	/* initialize sensor 1 */
+	triggers[1]     = new cOutput(GPIOA, GPIO_PIN_10);
+	sensors[1]      = new cUltraSSensor(timer, triggers[1], TIM_CHANNEL_3);
+	carcheckers[1]  = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, 1);
 
-	i++;
-
-	triggers[i] = new cOutput(GPIOA, GPIO_PIN_10);
-	sensors[i] = new cUltraSSensor(timer, triggers[i], TIM_CHANNEL_3);
-	carcheckers[1] = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, i);
-
-
-//	Playground
-
-	uint32_t startAddr = 0;
-	uint32_t endAddr = 0;
-
-	cirFlash.getFlashEnd(&endAddr);
-
-	printf("flash end addr: 0x%06X\n", (unsigned int)endAddr);
-
-	cirFlash.isSectorEnd(0x10000);
-	cirFlash.isSectorEnd(0x10001);
-	cirFlash.isSectorEnd(0x20001);
-	for(uint8_t idx=0; idx<8;idx++)
-	{
-
-		cirFlash.getSectorStart(&startAddr, idx);
-		cirFlash.getSectorEnd(&endAddr, idx);
-		printf("sector %d\tstart: 0x%06X\tend: 0x%06X\n", idx, (unsigned int)startAddr, (unsigned int)endAddr);
-	}
-
-
-//
-
-
-
-//
 
 	uint8_t idx = 0;
 	/* Infinite loop */
@@ -229,10 +201,10 @@ int main(void)
 			distanceSensor->sample();
 		}
 
-		uint32_t s = distanceSensor->getLastSample();
-		if (s)
+		uint32_t sample = distanceSensor->getLastSample();
+		if (sample)
 		{
-			if (carcheckers[idx]->run(s))
+			if (carcheckers[idx]->run(sample))
 			{
 				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
 				gewasdeKar->dbgPrint();
@@ -246,7 +218,7 @@ int main(void)
 	}
 }
 
-void carDistance(uint8_t argc, char **argv)
+void triggerDistance(uint8_t argc, char **argv)
 {
 	if (argc == 1)
 	{
@@ -271,10 +243,10 @@ void carDistance(uint8_t argc, char **argv)
 		printf(GREEN("set trigger Distance: %dcm\n"), (unsigned int)nvm->triggerDistance);
 	}
 }
-sTermEntry_t carDistEntry =
-{ "cd", "Set/Get the car trigger distance", carDistance };
+sTermEntry_t triggerDistanceEntry =
+{ "td", "Set/Get the car trigger distance", triggerDistance };
 
-void carTime(uint8_t argc, char **argv)
+void triggerTime(uint8_t argc, char **argv)
 {
 	if (argc == 1)
 	{
@@ -299,8 +271,8 @@ void carTime(uint8_t argc, char **argv)
 		printf(GREEN("trigTime: %dcm\n"), (unsigned int)nvm->triggerTime);
 	}
 }
-sTermEntry_t carTimeEntry =
-{ "ct", "Set/Get the car trigger time", carTime };
+sTermEntry_t triggerTimeEntry =
+{ "tt", "Set/Get the car trigger time", triggerTime };
 
 void distance_debug(uint8_t argc, char **argv)
 {
