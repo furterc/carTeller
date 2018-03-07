@@ -52,43 +52,29 @@ uint32_t cCirFlashMap::isSectorBoundry(uint32_t addr)
 }
 
 
-HAL_StatusTypeDef cCirFlashMap::getSectorStart(uint32_t *startAddr, uint32_t sectorCount)
+uint32_t cCirFlashMap::getSectorStart(uint32_t sectorCount)
 {
 	if (sectorCount > mSectors)
-		return HAL_ERROR;
+		return 0;
 
 	if (!sectorCount)
-	{
-		*startAddr = 0;
-		return HAL_OK;
-	}
+		return 0;
 
-	uint32_t shiftBit = sectorCount << mBitShiftCnt;
-
-	*startAddr = shiftBit;
-
-	return HAL_OK;
+	return sectorCount << mBitShiftCnt;
 }
 
-HAL_StatusTypeDef cCirFlashMap::getSectorEnd(uint32_t *endAddr, uint32_t sectorCount)
+uint32_t cCirFlashMap::getSectorEnd(uint32_t sectorCount)
 {
 	if (sectorCount > mSectors)
-		return HAL_ERROR;
+		return 0;
 
 	sectorCount++;
 
 	uint32_t shiftBit = sectorCount << mBitShiftCnt;
-
-	shiftBit--;
-	*endAddr = shiftBit;
-
-	return HAL_OK;
+	return --shiftBit;
 }
 
-HAL_StatusTypeDef cCirFlashMap::getFlashEnd(uint32_t *endAddr)
+uint32_t cCirFlashMap::getFlashEnd()
 {
-	uint32_t shiftBit = mSectors << mBitShiftCnt;
-	*endAddr = shiftBit;
-
-	return HAL_OK;
+	return (mSectors << mBitShiftCnt);
 }

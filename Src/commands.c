@@ -12,6 +12,7 @@ extern const sTermEntry_t spiEntry;
 extern const sTermEntry_t writespiEntry;
 extern const sTermEntry_t readspiEntry;
 extern const sTermEntry_t erasespiEntry;
+extern const sTermEntry_t ackEntry;
 extern const sTermEntry_t ddebugEntry;
 extern const sTermEntry_t triggerDistanceEntry;
 extern const sTermEntry_t triggerTimeEntry;
@@ -27,6 +28,7 @@ const sTermEntry_t *term_entries[] =
 		&writespiEntry,
 		&readspiEntry,
 		&erasespiEntry,
+		&ackEntry,
 		&ddebugEntry,
 		&triggerDistanceEntry,
 		&triggerTimeEntry,

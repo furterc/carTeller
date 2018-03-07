@@ -61,7 +61,7 @@
 #define TCK_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
-#define SENSOR_COUNT	3
+#define SENSOR_COUNT	2
 
 /* USER CODE END Private defines */
 

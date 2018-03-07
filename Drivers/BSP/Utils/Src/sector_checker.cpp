@@ -74,6 +74,10 @@ uint32_t cSectorChecker::getAddress(uint8_t *bytes, uint32_t len)
         address += 8 * mEntriesPerBit * mEntrySize;
     }
 
+    //only first bit set;
+    if(bytes[idx] == 0xFE)
+        return mEntrySize;
+
     uint32_t idxBit = 0;
     while(!READ_BIT(bytes[idx], (1 << idxBit)))
     {

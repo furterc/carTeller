@@ -47,9 +47,9 @@ public:
 	HAL_StatusTypeDef read(uint8_t *rxData, uint8_t len);
 
 	HAL_StatusTypeDef writeOpCode(uint8_t opCode);
-	HAL_StatusTypeDef writeOpCodeAt(uint16_t address, uint8_t opCode);
+	HAL_StatusTypeDef writeOpCodeAt(uint32_t address, uint8_t opCode);
 	HAL_StatusTypeDef readOpCode(uint8_t opCode, uint8_t *data, uint8_t len);
-	HAL_StatusTypeDef readOpCodeAt(uint16_t address, uint8_t opCode, uint8_t *data, uint8_t len);
+	HAL_StatusTypeDef readOpCodeAt(uint32_t address, uint8_t opCode, uint8_t *data, uint8_t len);
 };
 
 #endif /* DRIVERS_BSP_UTILS_SPI_H_ */

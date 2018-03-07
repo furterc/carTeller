@@ -10,7 +10,8 @@
 uint32_t cSPI::SpiFrequency(uint32_t hz)
 {
 	uint32_t divisor = 0;
-	uint32_t SysClkTmp = SystemCoreClock;
+	uint32_t SysClkTmp = HAL_RCC_GetSysClockFreq();
+	SysClkTmp /= 2;
 	uint32_t baudRate;
 
 	while (SysClkTmp > hz)
@@ -82,7 +83,7 @@ HAL_StatusTypeDef cSPI::writeOpCode(uint8_t opCode)
 	return write(&opCode, 1);
 }
 
-HAL_StatusTypeDef cSPI::writeOpCodeAt(uint16_t address, uint8_t opCode)
+HAL_StatusTypeDef cSPI::writeOpCodeAt(uint32_t address, uint8_t opCode)
 {
 	uint8_t addressBytes[3];
 	addressBytes[0] = (address >> 16) & 0xFF;
@@ -107,7 +108,7 @@ HAL_StatusTypeDef cSPI::readOpCode(uint8_t opCode, uint8_t *rxData, uint8_t len)
 	return HAL_OK;
 }
 
-HAL_StatusTypeDef cSPI::readOpCodeAt(uint16_t address, uint8_t opCode, uint8_t *rxData, uint8_t len)
+HAL_StatusTypeDef cSPI::readOpCodeAt(uint32_t address, uint8_t opCode, uint8_t *rxData, uint8_t len)
 {
 	uint8_t addressBytes[3];
 	addressBytes[0] = (address >> 16) & 0xFF;

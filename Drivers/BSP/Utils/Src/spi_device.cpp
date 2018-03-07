@@ -52,6 +52,7 @@ HAL_StatusTypeDef cSpiDevice::write(uint32_t address, uint8_t *txData,
 	writeEnable();
 	csLow();
 
+	printf("spi wrote %d bytes @ 0x%08X\n", len, (unsigned int)address);
 	HAL_StatusTypeDef status = mSPI->writeOpCodeAt(address, SPI_OPCODE_WRITE);
 
 	if (status == HAL_OK)
@@ -63,8 +64,7 @@ HAL_StatusTypeDef cSpiDevice::write(uint32_t address, uint8_t *txData,
 	return status;
 }
 
-HAL_StatusTypeDef cSpiDevice::read(uint32_t address, uint8_t *rxData,
-		uint8_t len)
+HAL_StatusTypeDef cSpiDevice::read(uint32_t address, uint8_t *rxData, uint8_t len)
 {
 	csLow();
 

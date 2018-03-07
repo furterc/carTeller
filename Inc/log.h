@@ -37,26 +37,26 @@ class cLog
 	cSectorChecker *mSectorChecker = 0;
 	bool mInitialized;
 
-	uint32_t mWashDataAddress;
 	uint8_t mWashEntrySize;
 
-	uint32_t getSectorStatus(uint32_t sector);
-	uint32_t setSectorStatus(uint32_t sector, uint32_t address);
-
+	uint32_t mStartSector;
 	uint32_t mHead;
 	uint32_t mTail;
 
 	void getHeadAndTail();
+	uint32_t getSectorHead(uint32_t address);
+	uint32_t getSectorTail(uint32_t address);
 public:
-	cLog(cSpiDevice *spiDevice, uint32_t sectorSize, uint32_t startSector, uint32_t sectors);
+	cLog(cSpiDevice *spiDevice, cCirFlashMap *map, uint32_t startSector);
 	virtual ~cLog();
 
 	HAL_StatusTypeDef init();
 	HAL_StatusTypeDef eraseDevice();
 
-	uint32_t getWashDataAddress();
-	HAL_StatusTypeDef getWashEntry(uint32_t addr, sCarwashObject_t *obj);
+	HAL_StatusTypeDef acknowledgeEntry(sCarwashObject_t *obj);
+	HAL_StatusTypeDef getWashEntry(uint32_t *addr, sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntry(sCarwashObject_t *obj);
+	HAL_StatusTypeDef addWashEntryAt(uint32_t addr, sCarwashObject_t *obj);
 	void dumpLog();
 };
 

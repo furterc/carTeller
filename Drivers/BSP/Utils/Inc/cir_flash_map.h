@@ -26,9 +26,9 @@ public:
 	uint32_t getSectorSize();
 
 	uint32_t isSectorBoundry(uint32_t addr);
-	HAL_StatusTypeDef getSectorStart(uint32_t *startAddr, uint32_t sectorCount);
-	HAL_StatusTypeDef getSectorEnd(uint32_t *endAddr, uint32_t sectorCount);
-	HAL_StatusTypeDef getFlashEnd(uint32_t *endAddr);
+	uint32_t getSectorStart(uint32_t sectorCount);
+	uint32_t getSectorEnd(uint32_t sectorCount);
+	uint32_t getFlashEnd();
 
 };
 

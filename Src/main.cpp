@@ -64,22 +64,25 @@
 // hardware
 cHw HW = cHw();
 
-// SPI flash
+// SPI
 cSPI spi = cSPI();
+
+// SPI Flash
 cOutput spiNss = cOutput(GPIOA, GPIO_PIN_4);
 cSpiDevice spiFlash= cSpiDevice(&spi, &spiNss);
-
-
 cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
-cLog log = cLog(&spiFlash, 0x010000, 1, 8);
 
-cUltraSSensor *distanceSensor = 0;
+// Log
+cLog log = cLog(&spiFlash, &cirFlash, 1);
 
 nvm_config_t *nvm;
 
 cOutput *triggers[SENSOR_COUNT];
 cUltraSSensor *sensors[SENSOR_COUNT];
 cCarCheck *carcheckers[SENSOR_COUNT];
+
+//currentSensor
+cUltraSSensor *distanceSensor = 0;
 
 void resetSource()
 {
@@ -116,8 +119,9 @@ int main(void)
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
 
-	/* Configure the system clock */
+	/* Configure the system clock and refresh register */
 	HW.SystemClock_Config();
+	SystemCoreClockUpdate();
 
 	/* Initialize the terminal */
 	terminal_init();
@@ -156,7 +160,7 @@ int main(void)
 
 	/* initialize the SPI */
     printf("SPI          : ");
-	if(spi.init(SPI1, (uint32_t) 10000000) == HAL_OK)
+	if(spi.init(SPI1, (uint32_t) 8000000) == HAL_OK)
 	    printf(GREEN("initialized\n"));
 	else
 	    printf(RED("failed\n"));
@@ -182,13 +186,13 @@ int main(void)
 	sensors[1]      = new cUltraSSensor(timer, triggers[1], TIM_CHANNEL_3);
 	carcheckers[1]  = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, 1);
 
-
 	uint8_t idx = 0;
 	/* Infinite loop */
 	while (1)
 	{
 		terminal_run();
 
+		// cycle through the sensors
 		bool timerRunning = distanceSensor->run();
 
 		if (!timerRunning)
@@ -336,13 +340,17 @@ void RspiTry(uint8_t argc, char **argv)
 		return;
 	}
 
-	uint32_t startAddr = 0x010000;
-	uint8_t cnt = atoi(argv[1]);
+	uint32_t sector = atoi(argv[1]);
+	uint32_t startAddr = 0;
+	for(uint8_t idx = 0; idx < sector; idx++)
+	    startAddr += 0x010000;
 
-	printf("read %d entries from 0x%08X\n", cnt, (unsigned int)startAddr);
+	uint32_t cnt = atoi(argv[2]);
+
+	printf("read %d entries from sector %d @ 0x%08X\n", (unsigned int)cnt, (unsigned int)sector, (unsigned int)startAddr);
 
 	uint8_t data[16];
-	for (uint8_t idx = 0; idx<cnt; idx++)
+	for (uint32_t idx = 0; idx<cnt; idx++)
 	{
 		spiFlash.read(startAddr, data, 16);
 
@@ -358,39 +366,27 @@ sTermEntry_t readspiEntry =
 { "sr", "spishitread", RspiTry };
 
 void WspiTry(uint8_t argc, char **argv)
-
 {
-//uint8_t buf[4] = {0x00, 0x01,  0x02, 0x03};
-//printf("buf:");
-//for(uint8_t idx = 0; idx<4; idx++)
-//	printf(" 0x%02X", buf[idx]);
-//printf("\n");
-//
-//uint8_t crcBuf[5];
-//
-//memcpy(crcBuf, buf, 4);
-//uint8_t crc = cCrc::crc8(buf, 4);
-//crcBuf[4] = crc;
-//
-//printf("crcd buf:");
-//for(uint8_t idx = 0; idx<5; idx++)
-//	printf(" 0x%02X", crcBuf[idx]);
-//printf("\n");
-//
-//printf("crcof buf: 0x%02X", cCrc::crc8(crcBuf, 5));
+    uint32_t sector = atoi(argv[1]);
+    uint32_t startAddr = 0;
+    for(uint8_t idx = 0; idx < sector; idx++)
+        startAddr += 0x010000;
 
+    uint32_t cnt = atoi(argv[2]);
 
-//	uint8_t data = 0x54;
-//	spi1.write(0x010000, &data, 1);
+    printf("write %d dummy entries at sector %d @ 0x%08X\n", (unsigned int)cnt, (unsigned int)sector, (unsigned int)startAddr);
+    sCarwashObject_t dummy;
+    dummy.bayNumber = 0xAA;
+    dummy.date_year = 0x11;
 
-//	uint8_t data[2] =
-//	{ 0x00, 0x01};//, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 };
-//	spi1.write(0x010000, data, 2);
-//	spi1.write(0x010010, data, 10);
+    log.addWashEntryAt(startAddr, &dummy);
+    for (uint32_t idx = 0; idx<cnt; idx++)
+    {
+        log.addWashEntry(&dummy);
+        startAddr += 0x10;
+    }
 }
-
-sTermEntry_t writespiEntry =
-{ "sw", "spishitwrite", WspiTry };
+sTermEntry_t writespiEntry = { "sw", "spishitwrite", WspiTry };
 
 void EspiTry(uint8_t argc, char **argv)
 {
@@ -402,6 +398,17 @@ void EspiTry(uint8_t argc, char **argv)
 
 sTermEntry_t erasespiEntry =
 { "se", "spi erase", EspiTry };
+
+void ack(uint8_t argc, char **argv)
+{
+
+
+
+}
+
+sTermEntry_t ackEntry =
+{ "ack", "acknowledge @ sector with count", ack };
+
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
