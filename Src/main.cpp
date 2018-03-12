@@ -376,6 +376,7 @@ void WspiTry(uint8_t argc, char **argv)
 
     printf("write %d dummy entries at sector %d @ 0x%08X\n", (unsigned int)cnt, (unsigned int)sector, (unsigned int)startAddr);
     sCarwashObject_t dummy;
+    memset(&dummy, 0xFF, sizeof(sCarwashObject_t));
     dummy.bayNumber = 0xAA;
     dummy.date_year = 0x11;
 
@@ -401,7 +402,18 @@ sTermEntry_t erasespiEntry =
 
 void ack(uint8_t argc, char **argv)
 {
+    if(argc > 2)
+        return;
 
+    int count = atoi(argv[1]);
+    if (count < 0)
+    {
+        printf(RED("count < 0"));
+        return;
+    }
+
+    printf("ack %d entries\n", count);
+    log.ackEntries(count);
 
 
 }

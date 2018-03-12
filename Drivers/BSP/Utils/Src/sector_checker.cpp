@@ -18,6 +18,7 @@ cSectorChecker::cSectorChecker(uint32_t entrySize, cCirFlashMap *map)
 
     mObjPerSector = mMap->getSectorSize() / entrySize;
     mAvailableBits = entrySize * 8;
+    mAvailableBits--;
     mEntriesPerBit = mObjPerSector / mAvailableBits;
 
 }
@@ -41,7 +42,8 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
     while(address > mMap->getSectorSize())
         address -= mMap->getSectorSize();
 
-    uint32_t bitsToSet = address / (mEntriesPerBit * mEntrySize);
+    uint32_t bitsToSet = address / ((mEntriesPerBit * mEntrySize) - 1);
+    bitsToSet++;
 
     uint8_t byteCount = 0;
     while(bitsToSet > 8)
@@ -58,6 +60,13 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
     memcpy(bytes, b, len);
 
     return len;
+}
+
+uint32_t cSectorChecker::getNextAddress(uint8_t *bytes, uint32_t len)
+{
+    uint32_t nextAddress = getAddress(bytes, len);
+    nextAddress += (mEntriesPerBit * mEntrySize);
+    return nextAddress;
 }
 
 uint32_t cSectorChecker::getAddress(uint8_t *bytes, uint32_t len)
@@ -78,7 +87,7 @@ uint32_t cSectorChecker::getAddress(uint8_t *bytes, uint32_t len)
     if(bytes[idx] == 0xFE)
         return mEntrySize;
 
-    uint32_t idxBit = 0;
+    uint32_t idxBit = 1;    //skip first bit
     while(!READ_BIT(bytes[idx], (1 << idxBit)))
     {
         idxBit++;

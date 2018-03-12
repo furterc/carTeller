@@ -46,6 +46,8 @@ class cLog
 	void getHeadAndTail();
 	uint32_t getSectorHead(uint32_t address);
 	uint32_t getSectorTail(uint32_t address);
+
+	HAL_StatusTypeDef ackWashEntry(uint32_t *addr, sCarwashObject_t *obj);
 public:
 	cLog(cSpiDevice *spiDevice, cCirFlashMap *map, uint32_t startSector);
 	virtual ~cLog();
@@ -53,7 +55,7 @@ public:
 	HAL_StatusTypeDef init();
 	HAL_StatusTypeDef eraseDevice();
 
-	HAL_StatusTypeDef acknowledgeEntry(sCarwashObject_t *obj);
+	HAL_StatusTypeDef ackEntries(uint32_t entryCount);
 	HAL_StatusTypeDef getWashEntry(uint32_t *addr, sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntry(sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntryAt(uint32_t addr, sCarwashObject_t *obj);

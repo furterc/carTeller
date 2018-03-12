@@ -26,6 +26,7 @@ public:
 	uint32_t getSectorSize();
 
 	uint32_t isSectorBoundry(uint32_t addr);
+	uint32_t getAddressSectorStart(uint32_t address);
 	uint32_t getSectorStart(uint32_t sectorCount);
 	uint32_t getSectorEnd(uint32_t sectorCount);
 	uint32_t getFlashEnd();

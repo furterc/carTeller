@@ -26,6 +26,7 @@ public:
     virtual ~cSectorChecker();
 
     uint32_t getBytes(uint32_t address, uint8_t *bytes, uint32_t len);
+    uint32_t getNextAddress(uint8_t *bytes, uint32_t len);
     uint32_t getAddress(uint8_t *bytes, uint32_t len);
 };
 

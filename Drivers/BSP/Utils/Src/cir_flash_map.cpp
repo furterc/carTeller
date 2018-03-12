@@ -51,6 +51,18 @@ uint32_t cCirFlashMap::isSectorBoundry(uint32_t addr)
 	return 0;
 }
 
+uint32_t cCirFlashMap::getAddressSectorStart(uint32_t address)
+{
+    if (address > getFlashEnd())
+        return 0;
+
+    if (!address)
+        return 0;
+
+    address >>= mBitShiftCnt;
+
+    return address << mBitShiftCnt;
+}
 
 uint32_t cCirFlashMap::getSectorStart(uint32_t sectorCount)
 {

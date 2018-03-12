@@ -46,13 +46,12 @@ cSpiDevice::~cSpiDevice()
 	// TODO Auto-generated destructor stub
 }
 
-HAL_StatusTypeDef cSpiDevice::write(uint32_t address, uint8_t *txData,
-		uint8_t len)
+HAL_StatusTypeDef cSpiDevice::write(uint32_t address, uint8_t *txData, uint8_t len)
 {
 	writeEnable();
 	csLow();
 
-	printf("spi wrote %d bytes @ 0x%08X\n", len, (unsigned int)address);
+//	printf("spi wrote %d bytes @ 0x%08X\r", len, (unsigned int)address);
 	HAL_StatusTypeDef status = mSPI->writeOpCodeAt(address, SPI_OPCODE_WRITE);
 
 	if (status == HAL_OK)
@@ -84,9 +83,9 @@ HAL_StatusTypeDef cSpiDevice::erase(uint16_t address, uint8_t blockSizekB)
 	csLow();
 
 	uint8_t opCode = SPI_OPCODE_ERASE_64KB;
-	if (blockSizekB < 4)
+	if (blockSizekB <= 4)
 		opCode = SPI_OPCODE_ERASE_4KB;
-	else if (blockSizekB < 32)
+	else if (blockSizekB <= 32)
 		opCode = SPI_OPCODE_ERASE_32KB;
 
 	HAL_StatusTypeDef status = mSPI->writeOpCodeAt(address, opCode);
