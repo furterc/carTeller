@@ -159,8 +159,9 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     //update the sector checker
     uint8_t bytes[mWashEntrySize];
     mSpiDevice->read(sectorStart, &bytes[0], mWashEntrySize);
-
     uint32_t nextAddress = mSectorChecker->getNextAddress(bytes, mWashEntrySize);
+
+    if(nextAddress > )
     if(*addr > (nextAddress + sectorStart))
     {
         uint8_t bytes[mWashEntrySize];
@@ -186,6 +187,7 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
         return HAL_ERROR;
 
     // increment address
+    printf("ack 0x%08X\n", (int)*addr);
     *addr += mWashEntrySize;
     // clear ack byte
     uint32_t ackPos = *addr - 2;
@@ -282,7 +284,8 @@ HAL_StatusTypeDef cLog::ackEntries(uint32_t entryCount)
     {
         if(addr == mTail)
             return HAL_ERROR;
-        ackWashEntry(&addr, &obj);
+        if(ackWashEntry(&addr, &obj) != HAL_OK)
+            break;
     }
 
     mHead = addr;

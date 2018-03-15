@@ -42,8 +42,26 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
     while(address > mMap->getSectorSize())
         address -= mMap->getSectorSize();
 
+    bool isEnd = false;
+    uint32_t add = address + mEntrySize;
+    if(mMap->isSectorBoundry(add))
+    {
+        isEnd = true;
+        printf("hier is die fokkop\n");
+    }
+
     uint32_t bitsToSet = address / ((mEntriesPerBit * mEntrySize) - 1);
     bitsToSet++;
+
+    //alles geset
+    if(isEnd)
+    {
+        bitsToSet = mAvailableBits + 1;
+    }
+    else if(bitsToSet >= mAvailableBits)
+    {
+        bitsToSet = mAvailableBits - 1;
+    }
 
     uint8_t byteCount = 0;
     while(bitsToSet > 8)
