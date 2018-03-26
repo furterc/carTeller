@@ -43,6 +43,8 @@ public:
 	HAL_StatusTypeDef erase(uint32_t address, uint8_t blockSizekB);
 	HAL_StatusTypeDef chipErase();
 	HAL_StatusTypeDef readId(uint8_t *data, uint8_t len);
+	HAL_StatusTypeDef readStatus(uint8_t *status);
+	HAL_StatusTypeDef isReady();
 };
 
 #endif /* DRIVERS_BSP_UTILS_INC_SPI_DEVICE_H_ */

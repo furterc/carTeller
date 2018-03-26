@@ -6,6 +6,7 @@
  */
 
 #include "spi_device.h"
+#include <string.h>
 
 void cSpiDevice::csHigh()
 {
@@ -121,4 +122,30 @@ HAL_StatusTypeDef cSpiDevice::readId(uint8_t *data, uint8_t len)
 	csHigh();
 
 	return status;
+}
+
+HAL_StatusTypeDef cSpiDevice::readStatus(uint8_t *status)
+{
+    csLow();
+
+    uint8_t data = 0;
+    HAL_StatusTypeDef s = mSPI->readOpCode(SPI_OPCODE_READ_STATUS, &data, 1);
+
+    csHigh();
+
+    memcpy(status, &data, 1);
+    return s;
+}
+
+HAL_StatusTypeDef cSpiDevice::isReady()
+{
+    uint8_t reg = 0;
+    HAL_StatusTypeDef status = readStatus(&reg);
+    if(status != HAL_OK)
+        return status;
+
+    if((reg & 0x01) == 0x00)
+        return HAL_OK;
+
+    return HAL_BUSY;
 }

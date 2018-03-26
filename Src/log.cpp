@@ -97,20 +97,14 @@ void cLog::getHeadAndTail()
 
 uint32_t cLog::getSectorHead(uint32_t address)
 {
-    if(address == mCirFlashMap->isSectorBoundry(address))
-    {
-
-    }
-
-
     uint32_t tempAddr = address;
     sCarwashObject_t tempObj;
-    getWashEntry(&tempAddr, &tempObj);
+    getWashEntry(tempAddr, &tempObj);
 
     while (tempObj.ack == 0x00)
     {
         tempAddr += mWashEntrySize;
-        getWashEntry(&tempAddr, &tempObj);
+        getWashEntry(tempAddr, &tempObj);
     }
     return tempAddr;
 }
@@ -119,16 +113,16 @@ uint32_t cLog::getSectorTail(uint32_t address)
 {
     uint32_t tempAddr = address;
     sCarwashObject_t tempObj;
-    getWashEntry(&tempAddr, &tempObj);
 
-    while (cCarWash::checkCrc(&tempObj) == HAL_OK)
+    while (getWashEntry(tempAddr, &tempObj) == HAL_OK)
     {
         tempAddr += mWashEntrySize;
-        getWashEntry(&tempAddr, &tempObj);
         if(mCirFlashMap->isSectorBoundry(tempAddr))
         {
+            if(mCirFlashMap->getFlashEnd() == tempAddr)
+                tempAddr = mCirFlashMap->getSectorStart(mStartSector);
+
             tempAddr += mWashEntrySize;
-            getWashEntry(&tempAddr, &tempObj);
         }
     }
     return tempAddr;
@@ -136,13 +130,21 @@ uint32_t cLog::getSectorTail(uint32_t address)
 
 void cLog::printHeadTail()
 {
-    printf("LOG HEAD: 0x%08X\n", mHead);
-    printf("LOG TAIL: 0x%08X\n", mTail);
+    printf("LOG HEAD: 0x%08X\n", (int)mHead);
+    printf("LOG TAIL: 0x%08X\n", (int)mTail);
 }
 
 HAL_StatusTypeDef cLog::init()
 {
     uint8_t data[3];
+
+    uint32_t timeout = 10;
+    if(waitForReady(timeout) == HAL_TIMEOUT)
+    {
+        printf(RED("\nDevice timed out.\n"));
+        return HAL_ERROR;
+    }
+
     mSpiDevice->readId(data, 3);
 
     uint32_t deviceId = 0;
@@ -165,9 +167,36 @@ HAL_StatusTypeDef cLog::eraseDevice()
     if (!mInitialized)
         return HAL_ERROR;
 
-    printf(RED("Erasing SPI device\n"));
-
     mSpiDevice->chipErase();
+
+    printf("Erasing SPI device");
+
+    uint32_t timeout = 10;
+    if(waitForReady(timeout) == HAL_OK)
+    {
+        printf(GREEN("Success\n"));
+        uint32_t newHeadTail = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
+        mHead = newHeadTail;
+        mTail = newHeadTail;
+        printHeadTail();
+        return HAL_OK;
+    }
+
+    printf(RED("Failed\n"));
+    return HAL_TIMEOUT;
+}
+
+HAL_StatusTypeDef cLog::waitForReady(uint32_t timeout)
+{
+    while((mSpiDevice->isReady() != HAL_OK) && timeout)
+    {
+        printf(".");
+        HAL_Delay(1000);
+        timeout--;
+    }
+    printf("\n");
+    if(!timeout)
+        return HAL_TIMEOUT;
 
     return HAL_OK;
 }
@@ -176,49 +205,22 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
 {
     uint32_t sectorStart = mCirFlashMap->getAddressSectorStart(*addr);
 
+    bool shouldErase = false;
     //update the sector checker
     uint8_t bytes[mWashEntrySize];
     mSpiDevice->read(sectorStart, &bytes[0], mWashEntrySize);
     uint32_t nextAddress = mSectorChecker->getNextAddress(bytes, mWashEntrySize);
-
-    //sector full, erase
-    if(nextAddress == 0xFFFFFFFF)
-    {
-        printf("*addr @ 0x%08X is end\n", *addr);
-        mSpiDevice->erase(*addr, 64);
-//        *addr += mWashEntrySize;
-        if (*addr == mCirFlashMap->getFlashEnd())   //end
-            *addr = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
-        return HAL_TIMEOUT;
-    }
-
-    bool shouldErase = false;
     if(*addr > (nextAddress + sectorStart))
     {
         uint8_t bytes[mWashEntrySize];
         if(mSectorChecker->getBytes(*addr, &bytes[0], mWashEntrySize) == 0xFFFFFFFF)
-        {
             shouldErase = true;
-        }
         else
             mSpiDevice->write(sectorStart, bytes, mWashEntrySize);
     }
 
-//    //roll over
-//    uint32_t boundry = mCirFlashMap->isSectorBoundry(*addr);
-//    if(boundry)
-//    {
-//        boundry--;
-//        mSpiDevice->erase(mCirFlashMap->getSectorStart(boundry), 64);
-//    }
-//        if (*addr == mCirFlashMap->getFlashEnd())
-//        {
-//
-//            *addr = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
-//        }
-
     // get the object
-    if(getWashEntry(addr, obj) != HAL_OK)
+    if(getWashEntry(*addr, obj) != HAL_OK)
         return HAL_ERROR;
 
     // increment address
@@ -226,15 +228,19 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
 
     if(shouldErase)
     {
-        printf("reados *addr @ 0x%08X is end\n", *addr);
+        printf("%13s: 0x%08X\n", "SPI erase sector", (int)mCirFlashMap->getAddressSectorStart(*addr));
         mSpiDevice->erase(*addr, 64);
+        uint32_t timeout = 10;
+        if(waitForReady(timeout) == HAL_TIMEOUT)
+            return HAL_TIMEOUT;
+
         *addr += mWashEntrySize;
         if (*addr == mCirFlashMap->getFlashEnd())   //end
         {
             *addr = mCirFlashMap->getSectorStart(mStartSector);
-            *addr += mWashEntrySize;
         }
-        printf("new *addr @ 0x%08X\n", *addr);
+            *addr += mWashEntrySize;
+        printf("new *addr @ 0x%08X\n", (int)*addr);
         return HAL_TIMEOUT;
     }
 
@@ -248,12 +254,10 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     return HAL_OK;
 }
 
-HAL_StatusTypeDef cLog::getWashEntry(uint32_t *addr, sCarwashObject_t *obj)
+HAL_StatusTypeDef cLog::getWashEntry(uint32_t address, sCarwashObject_t *obj)
 {
     if (!mInitialized)
         return HAL_ERROR;
-
-    uint32_t address = *addr;
 
     if (address % mWashEntrySize)
     {
@@ -261,14 +265,9 @@ HAL_StatusTypeDef cLog::getWashEntry(uint32_t *addr, sCarwashObject_t *obj)
         return HAL_ERROR;
     }
 
-    //roll over
-    if (address == mCirFlashMap->getFlashEnd())
-        address = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
-
     if (mSpiDevice->read(address, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
         printf(RED("getWasErr"));
 
-    *addr = address;
     /* check the crc */
     uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize);
     if (crc)
@@ -281,6 +280,7 @@ HAL_StatusTypeDef cLog::getWashEntry(uint32_t *addr, sCarwashObject_t *obj)
 
 HAL_StatusTypeDef cLog::addWashEntryAt(uint32_t addr, sCarwashObject_t *obj)
 {
+    mHead = addr;
     mTail = addr;
     addWashEntry(obj);
     return HAL_OK;
@@ -297,11 +297,8 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
         memset(tempArr, 0xFF, mWashEntrySize);
         tempArr[0] &= ~0x01;
 
-        if (mSpiDevice->write(mTail, tempArr, mWashEntrySize)
-                != HAL_OK)
-        {
+        if (mSpiDevice->write(mTail, tempArr, mWashEntrySize)!= HAL_OK)
             printf("write err @ 0x%08X\n", (unsigned int) mTail);
-        }
 
         //skip
         mTail += mWashEntrySize;
@@ -327,28 +324,21 @@ HAL_StatusTypeDef cLog::ackEntries(uint32_t entryCount)
 {
     if(mHead == mTail)
         return HAL_ERROR;
-    uint32_t addr = mHead;
-    static uint32_t endAddr = addr + (entryCount * mWashEntrySize);
     sCarwashObject_t obj;
-    while (addr < endAddr)
+
+    while (entryCount--)
     {
-        if(addr == mTail)
+        if(mHead == mTail)
             return HAL_ERROR;
 
-        HAL_StatusTypeDef status = ackWashEntry(&addr, &obj);
-        if(status == HAL_TIMEOUT)
+        HAL_StatusTypeDef status = ackWashEntry(&mHead, &obj);
+        if(status == HAL_ERROR)
         {
-            printf("rollover mTail @ 0x%08X\n", (int)mTail);
-            endAddr -= mCirFlashMap->getFlashEnd();
-        }
-        else if(status == HAL_ERROR)
-        {
-            printf("break mTail @ 0x%08X\n", (int)mTail);
+            printf("break @ 0x%08X\n", (int)mHead);
             break;
         }
     }
 
-    mHead = addr;
     return HAL_OK;
 }
 
@@ -364,7 +354,7 @@ void cLog::dumpLog()
     printf("minute,second\n");
     while ((addr < mTail) || (addr < mHead))
     {
-        getWashEntry(&addr, &obj);
+        getWashEntry(addr, &obj);
         printf("addr: 0x%08X -> ", (int)addr);
         printf("%d,", obj.bayNumber);
         printf("%d,%d,20%02d,", obj.date_dayOfMonth, obj.date_monthOfYear, obj.date_year);

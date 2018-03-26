@@ -55,9 +55,10 @@ public:
 	void printHeadTail();
 	HAL_StatusTypeDef init();
 	HAL_StatusTypeDef eraseDevice();
+	HAL_StatusTypeDef waitForReady(uint32_t timeout);
 
 	HAL_StatusTypeDef ackEntries(uint32_t entryCount);
-	HAL_StatusTypeDef getWashEntry(uint32_t *addr, sCarwashObject_t *obj);
+	HAL_StatusTypeDef getWashEntry(uint32_t addr, sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntry(sCarwashObject_t *obj);
 	HAL_StatusTypeDef addWashEntryAt(uint32_t addr, sCarwashObject_t *obj);
 	void dumpLog();
