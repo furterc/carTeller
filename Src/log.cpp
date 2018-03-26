@@ -41,6 +41,14 @@ void cLog::getHeadAndTail()
         mSpiDevice->read(address, bytes, mWashEntrySize);
         uint32_t startAddress = mSectorChecker->getAddress(bytes, mWashEntrySize);
 
+        if(startAddress == 0xFFFFFFFF)
+        {
+            printf("flash is glo vol?\n");
+            mSpiDevice->erase(mCirFlashMap->getSectorStart(sector), 64);
+            startAddress = 0;
+            break;
+        }
+
         if (startAddress)
         {
             uint32_t offset = mCirFlashMap->getSectorStart(sector);
@@ -74,6 +82,7 @@ void cLog::getHeadAndTail()
     if(!tempHead)
     {
         tempHead = mCirFlashMap->getSectorStart(mStartSector);
+        tempHead += mWashEntrySize;
         mHead = tempHead;
         mTail = tempHead;
         printf("LOG Head=Tail: 0x%08X\n", (unsigned int) tempHead);
@@ -116,8 +125,19 @@ uint32_t cLog::getSectorTail(uint32_t address)
     {
         tempAddr += mWashEntrySize;
         getWashEntry(&tempAddr, &tempObj);
+        if(mCirFlashMap->isSectorBoundry(tempAddr))
+        {
+            tempAddr += mWashEntrySize;
+            getWashEntry(&tempAddr, &tempObj);
+        }
     }
     return tempAddr;
+}
+
+void cLog::printHeadTail()
+{
+    printf("LOG HEAD: 0x%08X\n", mHead);
+    printf("LOG TAIL: 0x%08X\n", mTail);
 }
 
 HAL_StatusTypeDef cLog::init()
@@ -161,33 +181,63 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     mSpiDevice->read(sectorStart, &bytes[0], mWashEntrySize);
     uint32_t nextAddress = mSectorChecker->getNextAddress(bytes, mWashEntrySize);
 
-    if(nextAddress > )
+    //sector full, erase
+    if(nextAddress == 0xFFFFFFFF)
+    {
+        printf("*addr @ 0x%08X is end\n", *addr);
+        mSpiDevice->erase(*addr, 64);
+//        *addr += mWashEntrySize;
+        if (*addr == mCirFlashMap->getFlashEnd())   //end
+            *addr = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
+        return HAL_TIMEOUT;
+    }
+
+    bool shouldErase = false;
     if(*addr > (nextAddress + sectorStart))
     {
         uint8_t bytes[mWashEntrySize];
-        mSectorChecker->getBytes(*addr, &bytes[0], mWashEntrySize);
-        mSpiDevice->write(sectorStart, bytes, mWashEntrySize);
-    }
-
-    //roll over
-    uint32_t boundry = mCirFlashMap->isSectorBoundry(*addr);
-    if(boundry)
-    {
-        boundry--;
-        mSpiDevice->erase(mCirFlashMap->getSectorStart(boundry), 64);
-    }
-        if (*addr == mCirFlashMap->getFlashEnd())
+        if(mSectorChecker->getBytes(*addr, &bytes[0], mWashEntrySize) == 0xFFFFFFFF)
         {
-
-            *addr = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
+            shouldErase = true;
         }
+        else
+            mSpiDevice->write(sectorStart, bytes, mWashEntrySize);
+    }
+
+//    //roll over
+//    uint32_t boundry = mCirFlashMap->isSectorBoundry(*addr);
+//    if(boundry)
+//    {
+//        boundry--;
+//        mSpiDevice->erase(mCirFlashMap->getSectorStart(boundry), 64);
+//    }
+//        if (*addr == mCirFlashMap->getFlashEnd())
+//        {
+//
+//            *addr = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
+//        }
 
     // get the object
     if(getWashEntry(addr, obj) != HAL_OK)
         return HAL_ERROR;
 
     // increment address
-    printf("ack 0x%08X\n", (int)*addr);
+    printf("ack%08X\n", (int)*addr);
+
+    if(shouldErase)
+    {
+        printf("reados *addr @ 0x%08X is end\n", *addr);
+        mSpiDevice->erase(*addr, 64);
+        *addr += mWashEntrySize;
+        if (*addr == mCirFlashMap->getFlashEnd())   //end
+        {
+            *addr = mCirFlashMap->getSectorStart(mStartSector);
+            *addr += mWashEntrySize;
+        }
+        printf("new *addr @ 0x%08X\n", *addr);
+        return HAL_TIMEOUT;
+    }
+
     *addr += mWashEntrySize;
     // clear ack byte
     uint32_t ackPos = *addr - 2;
@@ -278,14 +328,24 @@ HAL_StatusTypeDef cLog::ackEntries(uint32_t entryCount)
     if(mHead == mTail)
         return HAL_ERROR;
     uint32_t addr = mHead;
-    uint32_t endAddr = addr + (entryCount * mWashEntrySize);
+    static uint32_t endAddr = addr + (entryCount * mWashEntrySize);
     sCarwashObject_t obj;
     while (addr < endAddr)
     {
         if(addr == mTail)
             return HAL_ERROR;
-        if(ackWashEntry(&addr, &obj) != HAL_OK)
+
+        HAL_StatusTypeDef status = ackWashEntry(&addr, &obj);
+        if(status == HAL_TIMEOUT)
+        {
+            printf("rollover mTail @ 0x%08X\n", (int)mTail);
+            endAddr -= mCirFlashMap->getFlashEnd();
+        }
+        else if(status == HAL_ERROR)
+        {
+            printf("break mTail @ 0x%08X\n", (int)mTail);
             break;
+        }
     }
 
     mHead = addr;

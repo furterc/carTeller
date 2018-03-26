@@ -77,7 +77,7 @@ HAL_StatusTypeDef cSpiDevice::read(uint32_t address, uint8_t *rxData, uint8_t le
 	return status;
 }
 
-HAL_StatusTypeDef cSpiDevice::erase(uint16_t address, uint8_t blockSizekB)
+HAL_StatusTypeDef cSpiDevice::erase(uint32_t address, uint8_t blockSizekB)
 {
 	writeEnable();
 	csLow();

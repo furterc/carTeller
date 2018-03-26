@@ -193,32 +193,32 @@ int main(void)
 		terminal_run();
 
 		// cycle through the sensors
-		bool timerRunning = distanceSensor->run();
-
-		if (!timerRunning)
-		{
-			//select next sample count
-			if (idx++ == 1)
-				idx = 0;
-
-			distanceSensor = sensors[idx];
-			distanceSensor->sample();
-		}
-
-		uint32_t sample = distanceSensor->getLastSample();
-		if (sample)
-		{
-			if (carcheckers[idx]->run(sample))
-			{
-				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
-				gewasdeKar->dbgPrint();
-				sCarwashObject_t carWashObj;
-				gewasdeKar->getObject(&carWashObj);
-				log.addWashEntry(&carWashObj);
-
-				delete (gewasdeKar);
-			}
-		}
+//		bool timerRunning = distanceSensor->run();
+//
+//		if (!timerRunning)
+//		{
+//			//select next sample count
+//			if (idx++ == 1)
+//				idx = 0;
+//
+//			distanceSensor = sensors[idx];
+//			distanceSensor->sample();
+//		}
+//
+//		uint32_t sample = distanceSensor->getLastSample();
+//		if (sample)
+//		{
+//			if (carcheckers[idx]->run(sample))
+//			{
+//				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
+//				gewasdeKar->dbgPrint();
+//				sCarwashObject_t carWashObj;
+//				gewasdeKar->getObject(&carWashObj);
+//				log.addWashEntry(&carWashObj);
+//
+//				delete (gewasdeKar);
+//			}
+//		}
 	}
 }
 
@@ -325,7 +325,8 @@ void spiTry(uint8_t argc, char **argv)
 	uint8_t data[3];
 	spiFlash.readId(data, 3);
 
-	printf("spi id: 0x%02X 0x%02X 0x%02X\n", data[0], data[1], data[2]);
+	printf("SPI Device ID: 0x%02X%02X%02X\n", data[0], data[1], data[2]);
+	log.printHeadTail();
 }
 
 sTermEntry_t spiEntry =

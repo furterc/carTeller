@@ -40,7 +40,7 @@ public:
 	HAL_StatusTypeDef write(uint32_t address, uint8_t *txData, uint8_t len);
 	HAL_StatusTypeDef read(uint32_t address, uint8_t *rxData, uint8_t len);
 
-	HAL_StatusTypeDef erase(uint16_t address, uint8_t blockSizekB);
+	HAL_StatusTypeDef erase(uint32_t address, uint8_t blockSizekB);
 	HAL_StatusTypeDef chipErase();
 	HAL_StatusTypeDef readId(uint8_t *data, uint8_t len);
 };

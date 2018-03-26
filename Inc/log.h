@@ -52,6 +52,7 @@ public:
 	cLog(cSpiDevice *spiDevice, cCirFlashMap *map, uint32_t startSector);
 	virtual ~cLog();
 
+	void printHeadTail();
 	HAL_StatusTypeDef init();
 	HAL_StatusTypeDef eraseDevice();
 

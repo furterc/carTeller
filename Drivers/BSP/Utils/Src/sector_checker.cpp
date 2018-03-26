@@ -18,7 +18,7 @@ cSectorChecker::cSectorChecker(uint32_t entrySize, cCirFlashMap *map)
 
     mObjPerSector = mMap->getSectorSize() / entrySize;
     mAvailableBits = entrySize * 8;
-    mAvailableBits--;
+    mAvailableBits -= 2;    //start and end bit
     mEntriesPerBit = mObjPerSector / mAvailableBits;
 
 }
@@ -42,26 +42,17 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
     while(address > mMap->getSectorSize())
         address -= mMap->getSectorSize();
 
-    bool isEnd = false;
+    //is einde
     uint32_t add = address + mEntrySize;
     if(mMap->isSectorBoundry(add))
-    {
-        isEnd = true;
-        printf("hier is die fokkop\n");
-    }
+        return 0xFFFFFFFF;
+
 
     uint32_t bitsToSet = address / ((mEntriesPerBit * mEntrySize) - 1);
     bitsToSet++;
 
-    //alles geset
-    if(isEnd)
-    {
-        bitsToSet = mAvailableBits + 1;
-    }
-    else if(bitsToSet >= mAvailableBits)
-    {
+    if(bitsToSet >= mAvailableBits)
         bitsToSet = mAvailableBits - 1;
-    }
 
     uint8_t byteCount = 0;
     while(bitsToSet > 8)
@@ -83,6 +74,10 @@ uint32_t cSectorChecker::getBytes(uint32_t address, uint8_t *bytes, uint32_t len
 uint32_t cSectorChecker::getNextAddress(uint8_t *bytes, uint32_t len)
 {
     uint32_t nextAddress = getAddress(bytes, len);
+
+    if(nextAddress == 0xFFFFFFFF)
+        return nextAddress;
+
     nextAddress += (mEntriesPerBit * mEntrySize);
     return nextAddress;
 }
@@ -93,19 +88,27 @@ uint32_t cSectorChecker::getAddress(uint8_t *bytes, uint32_t len)
         return 0;
 
     uint32_t address = 0;
-
     uint32_t idx = 0;
+
     while(bytes[idx] == 0x00 && idx < len)
     {
         idx++;
         address += 8 * mEntriesPerBit * mEntrySize;
     }
 
+    if(idx)
+        address -= 8 * mEntriesPerBit * mEntrySize;
+
     //only first bit set;
     if(bytes[idx] == 0xFE)
         return mEntrySize;
 
-    uint32_t idxBit = 1;    //skip first bit
+    //all bits set
+    if(idx == len)
+        return 0xFFFFFFFF;
+
+    uint32_t idxBit = 1; //skip first bit if 1st byte
+
     while(!READ_BIT(bytes[idx], (1 << idxBit)))
     {
         idxBit++;
