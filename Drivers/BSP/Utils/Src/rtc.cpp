@@ -25,6 +25,16 @@ cRTC *cRTC::getInstance()
 	return &instance;
 }
 
+HAL_StatusTypeDef cRTC::checkTime()
+{
+   RTC_TimeTypeDef time = getTime();
+   RTC_DateTypeDef date = getDate();
+   if(time.Hours == 0 && date.Year == 0 && date.Date == 1 && date.Month == 1)
+       return HAL_TIMEOUT;
+
+   return HAL_OK;
+}
+
 HAL_StatusTypeDef cRTC::init()
 {
 	RtcHandle.Instance = RTC;
@@ -39,7 +49,7 @@ HAL_StatusTypeDef cRTC::init()
 	if(HAL_RTC_Init(&RtcHandle) != HAL_OK)
 	    return HAL_ERROR;
 
-	return HAL_OK;
+	return checkTime();
 }
 
 void cRTC::setTime(RTC_TimeTypeDef time)

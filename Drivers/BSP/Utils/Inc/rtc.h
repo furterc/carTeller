@@ -18,6 +18,8 @@
 class cRTC
 {
 	RTC_HandleTypeDef RtcHandle;
+
+	HAL_StatusTypeDef checkTime();
 public:
 	cRTC();
 	virtual ~cRTC();

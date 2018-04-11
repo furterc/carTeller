@@ -67,7 +67,7 @@ uint8_t cCarCheck::run(uint32_t distance)
 
 			mCarWash->start(mStartTime.Hours, mStartTime.Minutes, mStartTime.Seconds);
 
-			printf(GREEN("Car in bay: %d @ %02d:%02d:%02d\n"), mBayNumber, mStartTime.Hours,
+			printf(GREEN("Bay %d start: %02d:%02d:%02d\n"), mBayNumber, mStartTime.Hours,
 					mStartTime.Minutes, mStartTime.Seconds);
 			mCarCount = 0;
 			carState = CARCHECK_STATE_INPROGRESS;

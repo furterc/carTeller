@@ -36,17 +36,18 @@
  ******************************************************************************
  */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
-#include "stm32l0xx_hal.h"
-#include "stm32l0xx_hal_conf.h"
-#include "terminal.h"
-#include "rtc.h"
-#include "commands.h"
 #include <stdlib.h>
 #include <string.h>
 
-#include "../Drivers/BSP/Utils/Inc/cir_flash_map.h"
-#include "../Drivers/BSP/Utils/Inc/rtc.h"
+#include "stm32l0xx_hal.h"
+#include "stm32l0xx_hal_conf.h"
+
+#include "main.h"
+#include "rtc.h"
+#include "terminal.h"
+#include "commands.h"
+
+#include "cir_flash_map.h"
 #include "nvm.h"
 #include "car_check.h"
 #include "car_wash.h"
@@ -56,10 +57,9 @@
 #include "ultra_s_sensor.h"
 #include "hw.h"
 #include "log.h"
-#include "crc.h"
+//#include "crc.h"
 #include "spi.h"
 #include "spi_device.h"
-
 
 // hardware
 cHw HW = cHw();
@@ -75,12 +75,11 @@ cCirFlashMap cirFlash = cCirFlashMap(0x010000, 8);
 // Log
 cLog log = cLog(&spiFlash, &cirFlash, 1);
 
-nvm_config_t *nvm;
-
 cOutput *triggers[SENSOR_COUNT];
 cUltraSSensor *sensors[SENSOR_COUNT];
 cCarCheck *carcheckers[SENSOR_COUNT];
 
+nvm_config_t nvm;
 //currentSensor
 cUltraSSensor *distanceSensor = 0;
 
@@ -104,13 +103,6 @@ void resetSource()
 		printf("Reset        : Options bytes load\n");
 
 	SET_BIT(RCC->CSR, RCC_CSR_RMVF);
-}
-
-void show_nvm(nvm_config_t *nvm)
-{
-//    printf(RED("NVM min time : %d\n"), (unsigned int)nvm->minimumTime);
-    printf("NVM trig dist: %dcm\n", (unsigned int)nvm->triggerDistance);
-    printf("NVM trig time: %ds\n", (unsigned int)nvm->triggerTime);
 }
 
 int main(void)
@@ -138,25 +130,22 @@ int main(void)
 	printf("System Clock : %dHz\n\r", (int) HAL_RCC_GetSysClockFreq());
 	resetSource();
 
-	/* get and show NVM */
-    nvm = (nvm_config_t *)malloc(sizeof(nvm_config_t));
-    nvm_getConfig(nvm);
-    show_nvm(nvm);
-
     /* initialize the RTC */
     printf("RTC          : ");
     if(cRTC::getInstance()->init() == HAL_OK)
-        printf(GREEN("initialized\n"));
-    else
-        printf(RED("failed\n"));
-
-    /* show the time */
     {
         RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
 	    RTC_DateTypeDef date = cRTC::getInstance()->getDate();
+
+	    printf(GREEN("Set\n"));
 	    printf("RTC Time     : %d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds);
 	    printf("RTC Date     : %d/%d/20%02d\n", date.Date, date.Month, date.Year);
+
     }
+    else if(cRTC::getInstance()->init() == HAL_TIMEOUT)
+        printf(RED("NOT SET\n"));
+    else
+        printf(RED("Failed\n"));
 
 	/* initialize the SPI */
     printf("SPI          : ");
@@ -172,6 +161,9 @@ int main(void)
 	else
 		printf(RED("failed\n"));
 
+	nvm_getConfig(&nvm);
+	show_nvm();
+
 	/* initialize the timerIc */
 	TimerIc.init();
 	cTimerIc *timer = &TimerIc;
@@ -179,12 +171,12 @@ int main(void)
 	/* initialize sensor 0 */
 	triggers[0]     = new cOutput(GPIOB, GPIO_PIN_0);
 	sensors[0]      = new cUltraSSensor(timer, triggers[0], TIM_CHANNEL_2);
-	carcheckers[0]  = new cCarCheck(nvm->triggerDistance, nvm->triggerTime, 0);
+	carcheckers[0]  = new cCarCheck(nvm.triggerDistance, nvm.triggerTime, 0);
 
 	/* initialize sensor 1 */
-	triggers[1]     = new cOutput(GPIOA, GPIO_PIN_10);
-	sensors[1]      = new cUltraSSensor(timer, triggers[1], TIM_CHANNEL_3);
-	carcheckers[1]  = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, 1);
+//	triggers[1]     = new cOutput(GPIOA, GPIO_PIN_10);
+//	sensors[1]      = new cUltraSSensor(timer, triggers[1], TIM_CHANNEL_3);
+//	carcheckers[1]  = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, 1);
 
 	uint8_t idx = 0;
 	/* Infinite loop */
@@ -193,90 +185,41 @@ int main(void)
 		terminal_run();
 
 		// cycle through the sensors
-//		bool timerRunning = distanceSensor->run();
-//
-//		if (!timerRunning)
-//		{
-//			//select next sample count
+		bool timerRunning = distanceSensor->run();
+
+		if (!timerRunning)
+		{
+			//select next sample count
 //			if (idx++ == 1)
 //				idx = 0;
-//
-//			distanceSensor = sensors[idx];
-//			distanceSensor->sample();
-//		}
-//
-//		uint32_t sample = distanceSensor->getLastSample();
-//		if (sample)
-//		{
-//			if (carcheckers[idx]->run(sample))
-//			{
-//				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
-//				gewasdeKar->dbgPrint();
-//				sCarwashObject_t carWashObj;
-//				gewasdeKar->getObject(&carWashObj);
-//				log.addWashEntry(&carWashObj);
-//
-//				delete (gewasdeKar);
-//			}
-//		}
+
+			distanceSensor = sensors[idx];
+			distanceSensor->sample();
+		}
+
+		uint32_t sample = distanceSensor->getLastSample();
+		if (sample)
+		{
+			if (carcheckers[idx]->run(sample))
+			{
+				cCarWash *gewasdeKar = carcheckers[idx]->getCarWash();
+				sCarwashObject_t carWashObj;
+				gewasdeKar->getObject(&carWashObj);
+
+				RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
+				printf(MAGENTA("Bay %d end  : %02d:%02d:%02d\n"), carWashObj.bayNumber,time.Hours, time.Minutes, time.Seconds);
+				printf(MAGENTA("Bay %d dur  : %02d:%02d\n"), carWashObj.bayNumber, carWashObj.duration_minute ,carWashObj.duration_second);
+
+				if(carWashObj.duration_minute == 0 && carWashObj.duration_second < nvm.minimumTime)
+				    printf(YELLOW("%ds too short\n"), carWashObj.duration_second);
+				else
+				    log.addWashEntry(&carWashObj);
+
+				delete (gewasdeKar);
+			}
+		}
 	}
 }
-
-void triggerDistance(uint8_t argc, char **argv)
-{
-	if (argc == 1)
-	{
-		printf("trigDistance: %dcm\n", (unsigned int)nvm->triggerDistance);
-	}
-	else if (argc == 2)
-	{
-		int dist = atoi(argv[1]);
-		if(dist < 30 || dist > 450)
-		{
-		    printf(RED("30 < triggerdistance < 450\n"));
-		    return;
-		}
-
-		nvm->triggerDistance = (uint32_t)dist;
-
-		if(nvm_setConfig(nvm) != HAL_OK)
-		{
-		    printf("failed to update nvm\n");
-		    return;
-		}
-		printf(GREEN("set trigger Distance: %dcm\n"), (unsigned int)nvm->triggerDistance);
-	}
-}
-sTermEntry_t triggerDistanceEntry =
-{ "td", "Set/Get the car trigger distance", triggerDistance };
-
-void triggerTime(uint8_t argc, char **argv)
-{
-	if (argc == 1)
-	{
-		printf("trigTime: %d\n", (unsigned int)nvm->triggerTime);
-	}
-	else if (argc == 2)
-	{
-		int time = atoi(argv[1]);
-		if(time <= 0)
-		{
-		    printf(RED("trigger time < 0\n"));
-		    return;
-		}
-
-		nvm->triggerTime = (uint32_t)time;
-
-		if(nvm_setConfig(nvm) != HAL_OK)
-		{
-		    printf("failed to update nvm\n");
-		    return;
-		}
-		printf(GREEN("trigTime: %dcm\n"), (unsigned int)nvm->triggerTime);
-	}
-}
-sTermEntry_t triggerTimeEntry =
-{ "tt", "Set/Get the car trigger time", triggerTime };
 
 void distance_debug(uint8_t argc, char **argv)
 {
@@ -330,7 +273,7 @@ void spiTry(uint8_t argc, char **argv)
 }
 
 sTermEntry_t spiEntry =
-{ "s", "spishit", spiTry };
+{ "s", "spiID", spiTry };
 
 void RspiTry(uint8_t argc, char **argv)
 {

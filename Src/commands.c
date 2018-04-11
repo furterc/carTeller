@@ -2,6 +2,7 @@
 
 #include "terminal.h"
 #include "commands.h"
+#include "nvm.h"
 
 extern const sTermEntry_t hEntry;
 extern const sTermEntry_t helpEntry;
@@ -14,8 +15,6 @@ extern const sTermEntry_t readspiEntry;
 extern const sTermEntry_t erasespiEntry;
 extern const sTermEntry_t ackEntry;
 extern const sTermEntry_t ddebugEntry;
-extern const sTermEntry_t triggerDistanceEntry;
-extern const sTermEntry_t triggerTimeEntry;
 
 const sTermEntry_t *term_entries[] =
 {
@@ -32,5 +31,6 @@ const sTermEntry_t *term_entries[] =
 		&ddebugEntry,
 		&triggerDistanceEntry,
 		&triggerTimeEntry,
+		&minTimeEntry,
         0
 };

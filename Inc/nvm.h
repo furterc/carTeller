@@ -12,11 +12,15 @@
 #define NVM_CAR_TRIG_TIME_OFFSET	16
 
 #include <stdbool.h>
-
+#include "terminal.h"
 
 #ifdef __cplusplus
  extern "C" {
 #endif
+
+extern sTermEntry_t triggerDistanceEntry;
+extern sTermEntry_t triggerTimeEntry;
+extern sTermEntry_t minTimeEntry;
 
 typedef struct
 {
@@ -27,6 +31,7 @@ typedef struct
 
 HAL_StatusTypeDef nvm_getConfig(nvm_config_t *nvm);
 HAL_StatusTypeDef nvm_setConfig(nvm_config_t *nvm);
+void show_nvm();
 
 #ifdef __cplusplus
  }

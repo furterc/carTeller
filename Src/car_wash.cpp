@@ -51,10 +51,10 @@ void cCarWash::end(uint8_t hour, uint8_t minute, uint8_t second)
 
 void cCarWash::dbgPrint()
 {
-	printf(GREEN_B("Carwash bay: %d\n"), mCarWashObj.bayNumber);
+	printf(GREEN_B("Bay : %d\n"), mCarWashObj.bayNumber);
 	printf("Date: %d/%d/20%02d\n", mCarWashObj.date_dayOfMonth, mCarWashObj.date_monthOfYear, mCarWashObj.date_year);
 	printf("Time: %02d:%02d\n", mCarWashObj.time_hour, mCarWashObj.time_minute);
-	printf("Duration: %02d:%02d\n", mCarWashObj.duration_minute, mCarWashObj.duration_second);
+	printf("Dur : %02d:%02d\n", mCarWashObj.duration_minute, mCarWashObj.duration_second);
 }
 
 void cCarWash::dbgPrintObj(sCarwashObject_t obj)

@@ -82,7 +82,7 @@ void cLog::getHeadAndTail()
     if(!tempHead)
     {
         tempHead = mCirFlashMap->getSectorStart(mStartSector);
-        tempHead += mWashEntrySize;
+//        tempHead += mWashEntrySize;
         mHead = tempHead;
         mTail = tempHead;
         printf("LOG Head=Tail: 0x%08X\n", (unsigned int) tempHead);
@@ -223,8 +223,7 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     if(getWashEntry(*addr, obj) != HAL_OK)
         return HAL_ERROR;
 
-    // increment address
-    printf("ack%08X\n", (int)*addr);
+//    printf("ack%08X\n", (int)*addr);
 
     if(shouldErase)
     {
@@ -290,8 +289,6 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
 {
     if (mCirFlashMap->isSectorBoundry(mTail) > 0)
     {
-        //is hier op 'n boundry wat ek die sector info moet update
-
         //set eerste bit
         uint8_t tempArr[mWashEntrySize];
         memset(tempArr, 0xFF, mWashEntrySize);
@@ -304,6 +301,7 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
         mTail += mWashEntrySize;
     }
 
+    printf("log write @ 0x%08X\n", (unsigned int) mTail);
     /* set the crc */
     uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize - 1);
     obj->crc = crc;
@@ -354,13 +352,15 @@ void cLog::dumpLog()
     printf("minute,second\n");
     while ((addr < mTail) || (addr < mHead))
     {
-        getWashEntry(addr, &obj);
+        ackWashEntry(&addr, &obj);
+//        getWashEntry(addr, &obj);
         printf("addr: 0x%08X -> ", (int)addr);
         printf("%d,", obj.bayNumber);
         printf("%d,%d,20%02d,", obj.date_dayOfMonth, obj.date_monthOfYear, obj.date_year);
         printf("%d,%02d,%02d,", obj.time_hour, obj.time_minute, obj.time_second);
         printf("%d,%02d\n", obj.duration_minute, obj.duration_second);
 
-        addr += mWashEntrySize;
+//        addr += mWashEntrySize;
     }
+    mHead = addr;
 }
