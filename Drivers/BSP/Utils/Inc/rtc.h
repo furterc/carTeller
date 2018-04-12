@@ -27,10 +27,10 @@ public:
 	HAL_StatusTypeDef init();
 
 	void setTime(RTC_TimeTypeDef time);
-	RTC_TimeTypeDef getTime();
+	void getTime(RTC_TimeTypeDef *time);
 
 	void setDate(RTC_DateTypeDef date);
-	RTC_DateTypeDef getDate();
+	void getDate(RTC_DateTypeDef *date);
 	};
 
 #endif /* DRIVERS_BSP_UTILS_CRTC_H_ */

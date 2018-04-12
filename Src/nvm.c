@@ -54,8 +54,8 @@ void show_nvm()
     nvm_config_t nvm;
     nvm_getConfig(&nvm);
     printf("Trigger dist : %dcm\n", (int)nvm.triggerDistance);
-    printf("Trigger time : %ds\n", (unsigned int)nvm.triggerTime);
-    printf("Minimum time : %ds\n", (unsigned int)nvm.minimumTime);
+    printf("Trigger time : %dsec\n", (unsigned int)nvm.triggerTime);
+    printf("Minimum time : %dmin\n", (unsigned int)nvm.minimumTime);
 }
 
 void triggerDistance(uint8_t argc, char **argv)
@@ -94,7 +94,7 @@ void triggerTime(uint8_t argc, char **argv)
     nvm_getConfig(&nvm);
     if (argc == 1)
     {
-        printf("Trigger time : %ds\n", (unsigned int)nvm.triggerTime);
+        printf("Trigger time : %dsec\n", (unsigned int)nvm.triggerTime);
     }
     else if (argc == 2)
     {
@@ -112,7 +112,7 @@ void triggerTime(uint8_t argc, char **argv)
             printf("failed to update nvm\n");
             return;
         }
-        printf(GREEN("Trigger time : %ds\n"), (unsigned int)nvm.triggerTime);
+        printf(GREEN("Trigger time : %dsec\n"), (unsigned int)nvm.triggerTime);
     }
 }
 sTermEntry_t triggerTimeEntry =
@@ -125,14 +125,14 @@ void minTime(uint8_t argc, char **argv)
     nvm_getConfig(&nvm);
     if (argc == 1)
     {
-        printf("Minimum time : %ds\n", (unsigned int)nvm.minimumTime);
+        printf("Minimum time : %dmin\n", (unsigned int)nvm.minimumTime);
     }
     else if (argc == 2)
     {
         int time = atoi(argv[1]);
-        if(time <= nvm.triggerTime || time > 60)
+        if(time < 0 || time > 60)
         {
-            printf(RED("Trigger time(%d)s < Minimum time(s) < 60s\n"), (int)nvm.triggerTime);
+            printf(RED("0 <= Minimum time(min) < 60\n"));
             return;
         }
 
@@ -143,7 +143,7 @@ void minTime(uint8_t argc, char **argv)
             printf("failed to update nvm\n");
             return;
         }
-        printf(GREEN("Minimum time : %ds\n"), (unsigned int)nvm.minimumTime);
+        printf(GREEN("Minimum time : %dmin\n"), (unsigned int)nvm.minimumTime);
     }
 }
 sTermEntry_t minTimeEntry =

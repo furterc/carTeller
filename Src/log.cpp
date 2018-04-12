@@ -30,7 +30,7 @@ cLog::~cLog()
 
 void cLog::getHeadAndTail()
 {
-    printf("\n");
+//    printf("\n");
     uint32_t tempHead = 0;
     uint8_t refresh = 0;
     for (uint32_t sector = mStartSector; sector < mCirFlashMap->getSectorCount(); sector++)
@@ -43,7 +43,6 @@ void cLog::getHeadAndTail()
 
         if(startAddress == 0xFFFFFFFF)
         {
-            printf("flash is glo vol?\n");
             mSpiDevice->erase(mCirFlashMap->getSectorStart(sector), 64);
             startAddress = 0;
             break;
@@ -55,11 +54,11 @@ void cLog::getHeadAndTail()
             startAddress += offset;
         }
 
-        printf("S%d @ 0x%06X: ", (int) mCirFlashMap->isSectorBoundry(address), (int) address);
+//        printf("S%d @ 0x%06X: ", (int) mCirFlashMap->isSectorBoundry(address), (int) address);
 
         if (!startAddress)
         {
-            printf(RED("No entries found.\n"));
+//            printf(RED("No entries found.\n"));
             refresh = 1;
         }
         else
@@ -74,7 +73,7 @@ void cLog::getHeadAndTail()
             if (!tempHead && !refresh)
                 tempHead = startAddress;
 
-            printf(GREEN("Entries @ %08X\n"), (unsigned int) startAddress);
+//            printf(GREEN("Entries @ %08X\n"), (unsigned int) startAddress);
         }
     }
 
@@ -85,14 +84,14 @@ void cLog::getHeadAndTail()
 //        tempHead += mWashEntrySize;
         mHead = tempHead;
         mTail = tempHead;
-        printf("LOG Head=Tail: 0x%08X\n", (unsigned int) tempHead);
+//        printf("LOG Head=Tail: 0x%08X\n", (unsigned int) tempHead);
         return;
     }
 
     mHead = getSectorHead(tempHead);
-    printf("LOG Head     : 0x%08X\n", (unsigned int) mHead);
+//    printf("LOG Head     : 0x%08X\n", (unsigned int) mHead);
     mTail = getSectorTail(mHead);
-    printf("LOG Tail     : 0x%08X\n", (unsigned int) mTail);
+//    printf("LOG Tail     : 0x%08X\n", (unsigned int) mTail);
 }
 
 uint32_t cLog::getSectorHead(uint32_t address)
@@ -130,20 +129,17 @@ uint32_t cLog::getSectorTail(uint32_t address)
 
 void cLog::printHeadTail()
 {
-    printf("LOG HEAD: 0x%08X\n", (int)mHead);
-    printf("LOG TAIL: 0x%08X\n", (int)mTail);
+    printf("LOG HEAD     : 0x%08X\n", (int)mHead);
+    printf("LOG TAIL     : 0x%08X\n", (int)mTail);
 }
 
 HAL_StatusTypeDef cLog::init()
 {
     uint8_t data[3];
 
-    uint32_t timeout = 10;
+    uint32_t timeout = 10000; // 10 sec
     if(waitForReady(timeout) == HAL_TIMEOUT)
-    {
-        printf(RED("\nDevice timed out.\n"));
-        return HAL_ERROR;
-    }
+        return HAL_TIMEOUT;
 
     mSpiDevice->readId(data, 3);
 
@@ -169,13 +165,13 @@ HAL_StatusTypeDef cLog::eraseDevice()
 
     mSpiDevice->chipErase();
 
-    printf("Erasing SPI device");
+    printf("Erasing SPI device: ");
 
-    uint32_t timeout = 10;
+    uint32_t timeout = 10000; //10sec
     if(waitForReady(timeout) == HAL_OK)
     {
         printf(GREEN("Success\n"));
-        uint32_t newHeadTail = mCirFlashMap->getSectorStart(mStartSector) + mWashEntrySize;
+        uint32_t newHeadTail = mCirFlashMap->getSectorStart(mStartSector);// + mWashEntrySize;
         mHead = newHeadTail;
         mTail = newHeadTail;
         printHeadTail();
@@ -190,11 +186,10 @@ HAL_StatusTypeDef cLog::waitForReady(uint32_t timeout)
 {
     while((mSpiDevice->isReady() != HAL_OK) && timeout)
     {
-        printf(".");
-        HAL_Delay(1000);
+        HAL_Delay(1);
         timeout--;
     }
-    printf("\n");
+
     if(!timeout)
         return HAL_TIMEOUT;
 
@@ -206,6 +201,9 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     uint32_t sectorStart = mCirFlashMap->getAddressSectorStart(*addr);
 
     bool shouldErase = false;
+
+    if(mCirFlashMap->isSectorBoundry(*addr))
+        *addr += mWashEntrySize;
     //update the sector checker
     uint8_t bytes[mWashEntrySize];
     mSpiDevice->read(sectorStart, &bytes[0], mWashEntrySize);
@@ -229,7 +227,7 @@ HAL_StatusTypeDef cLog::ackWashEntry(uint32_t *addr, sCarwashObject_t *obj)
     {
         printf("%13s: 0x%08X\n", "SPI erase sector", (int)mCirFlashMap->getAddressSectorStart(*addr));
         mSpiDevice->erase(*addr, 64);
-        uint32_t timeout = 10;
+        uint32_t timeout = 10000;
         if(waitForReady(timeout) == HAL_TIMEOUT)
             return HAL_TIMEOUT;
 
@@ -267,6 +265,13 @@ HAL_StatusTypeDef cLog::getWashEntry(uint32_t address, sCarwashObject_t *obj)
     if (mSpiDevice->read(address, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
         printf(RED("getWasErr"));
 
+    uint32_t timeout = 250; //250 ms
+    if(waitForReady(timeout) != HAL_OK)
+    {
+        printf("Read timeout\n");
+        return HAL_TIMEOUT;
+    }
+
     /* check the crc */
     uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize);
     if (crc)
@@ -297,11 +302,18 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
         if (mSpiDevice->write(mTail, tempArr, mWashEntrySize)!= HAL_OK)
             printf("write err @ 0x%08X\n", (unsigned int) mTail);
 
+        uint32_t timeout = 250; //250 ms
+        if(waitForReady(timeout) != HAL_OK)
+        {
+            printf("write timeout\n");
+            return HAL_TIMEOUT;
+        }
+
         //skip
         mTail += mWashEntrySize;
     }
 
-    printf("log write @ 0x%08X\n", (unsigned int) mTail);
+//    printf("log write @ 0x%08X\n", (unsigned int) mTail);
     /* set the crc */
     uint8_t crc = cCrc::crc8((uint8_t *) obj, mWashEntrySize - 1);
     obj->crc = crc;
@@ -309,6 +321,13 @@ HAL_StatusTypeDef cLog::addWashEntry(sCarwashObject_t *obj)
     if (mSpiDevice->write(mTail, (uint8_t *) obj, mWashEntrySize) != HAL_OK)
     {
         printf("write err @ 0x%08X\n", (unsigned int) mTail);
+    }
+
+    uint32_t timeout = 250; //250 ms
+    if(waitForReady(timeout) != HAL_OK)
+    {
+        printf("write timeout\n");
+        return HAL_TIMEOUT;
     }
 
     mTail += mWashEntrySize;
@@ -354,7 +373,6 @@ void cLog::dumpLog()
     {
         ackWashEntry(&addr, &obj);
 //        getWashEntry(addr, &obj);
-        printf("addr: 0x%08X -> ", (int)addr);
         printf("%d,", obj.bayNumber);
         printf("%d,%d,20%02d,", obj.date_dayOfMonth, obj.date_monthOfYear, obj.date_year);
         printf("%d,%02d,%02d,", obj.time_hour, obj.time_minute, obj.time_second);

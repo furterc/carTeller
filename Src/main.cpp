@@ -43,23 +43,23 @@
 #include "stm32l0xx_hal_conf.h"
 
 #include "main.h"
-#include "rtc.h"
+#include "hw.h"
 #include "terminal.h"
 #include "commands.h"
 
-#include "cir_flash_map.h"
 #include "nvm.h"
-#include "car_check.h"
-#include "car_wash.h"
-
+#include "rtc.h"
 #include "output.h"
+
 #include "timer_ic.h"
 #include "ultra_s_sensor.h"
-#include "hw.h"
+
 #include "log.h"
-//#include "crc.h"
 #include "spi.h"
 #include "spi_device.h"
+#include "cir_flash_map.h"
+#include "car_check.h"
+#include "car_wash.h"
 
 // hardware
 cHw HW = cHw();
@@ -134,8 +134,10 @@ int main(void)
     printf("RTC          : ");
     if(cRTC::getInstance()->init() == HAL_OK)
     {
-        RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
-	    RTC_DateTypeDef date = cRTC::getInstance()->getDate();
+        RTC_TimeTypeDef time;
+        cRTC::getInstance()->getTime(&time);
+	    RTC_DateTypeDef date;
+	    cRTC::getInstance()->getDate(&date);
 
 	    printf(GREEN("Set\n"));
 	    printf("RTC Time     : %d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds);
@@ -157,7 +159,10 @@ int main(void)
 	/* initialize the log */
 	printf("LOG          : ");
 	if (log.init() == HAL_OK)
+	{
 		printf(GREEN("initialized\n"));
+		log.printHeadTail();
+	}
 	else
 		printf(RED("failed\n"));
 
@@ -178,6 +183,7 @@ int main(void)
 //	sensors[1]      = new cUltraSSensor(timer, triggers[1], TIM_CHANNEL_3);
 //	carcheckers[1]  = new cCarCheck(nvm->triggerDistance, nvm->triggerDistance, 1);
 
+	printf(GREEN("$: "));
 	uint8_t idx = 0;
 	/* Infinite loop */
 	while (1)
@@ -206,11 +212,12 @@ int main(void)
 				sCarwashObject_t carWashObj;
 				gewasdeKar->getObject(&carWashObj);
 
-				RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
+				RTC_TimeTypeDef time;
+				cRTC::getInstance()->getTime(&time);
 				printf(MAGENTA("Bay %d end  : %02d:%02d:%02d\n"), carWashObj.bayNumber,time.Hours, time.Minutes, time.Seconds);
 				printf(MAGENTA("Bay %d dur  : %02d:%02d\n"), carWashObj.bayNumber, carWashObj.duration_minute ,carWashObj.duration_second);
 
-				if(carWashObj.duration_minute == 0 && carWashObj.duration_second < nvm.minimumTime)
+				if(carWashObj.duration_minute < nvm.minimumTime)
 				    printf(YELLOW("%ds too short\n"), carWashObj.duration_second);
 				else
 				    log.addWashEntry(&carWashObj);
@@ -368,7 +375,8 @@ sTermEntry_t ackEntry =
 
 void rtcSetGet(uint8_t argc, char **argv)
 {
-	RTC_TimeTypeDef time = cRTC::getInstance()->getTime();
+	RTC_TimeTypeDef time;
+	cRTC::getInstance()->getTime(&time);
 
 	if (argc == 1)
 	{
@@ -390,7 +398,8 @@ sTermEntry_t rtcEntry =
 void dateSetGet(uint8_t argc, char **argv)
 {
 
-	RTC_DateTypeDef date = cRTC::getInstance()->getDate();
+	RTC_DateTypeDef date;
+	cRTC::getInstance()->getDate(&date);
 
 	if (argc == 1)
 	{

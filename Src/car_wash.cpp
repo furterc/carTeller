@@ -41,7 +41,10 @@ void cCarWash::end(uint8_t hour, uint8_t minute, uint8_t second)
 	durMinute = minute - mCarWashObj.time_minute;
 
 	if (second < mCarWashObj.time_second)
+	{
+	    durMinute--;
 		second += 60;
+	}
 
 	durSecond = second - mCarWashObj.time_second;
 
